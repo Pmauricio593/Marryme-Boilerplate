@@ -1,0 +1,25 @@
+from django.contrib import admin
+from django.urls import path, include
+from django.http import JsonResponse
+from rest_framework_simplejwt.views import TokenRefreshView
+from apps.prestadores.views import MarryMeTokenView
+
+
+def health(request):
+    return JsonResponse({'status': 'ok'})
+
+
+urlpatterns = [
+    path('', health),
+    path('health/', health),
+    path('admin/', admin.site.urls),
+
+    # Auth
+    path('api/v1/auth/login/',   MarryMeTokenView.as_view(), name='login'),
+    path('api/v1/auth/refresh/', TokenRefreshView.as_view(), name='refresh'),
+
+    # Apps
+    path('api/v1/', include('apps.prestadores.urls')),
+    path('api/v1/', include('apps.campanhas.urls')),
+    path('api/v1/', include('apps.roteiros.urls')),
+]

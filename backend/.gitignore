@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# Ambiente virtual
+.venv/
+venv/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+staticfiles/
+media/
+celerybeat-schedule
+
+# Variáveis de ambiente
+.env
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/

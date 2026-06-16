@@ -1,0 +1,39 @@
+# =============================================================================
+# marryme-site — monorepo
+# Raiz: site institucional Jekyll (marryme.com.br)
+# frontend/: app Next.js — sistema interno + portal (marryme.com.br/app)
+# backend/: API Django + Celery (api.marryme.com.br)
+# =============================================================================
+
+# Jekyll
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+
+# Ruby
+.bundle/
+vendor/bundle/
+
+# Frontend (Next.js)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env*.local
+
+# Backend (ver também backend/.gitignore)
+backend/venv/
+backend/db.sqlite3
+backend/staticfiles/
+backend/media/
+
+# Env
+.env
+.env.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
