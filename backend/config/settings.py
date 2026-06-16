@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'corsheaders',
     # MarryMe — core primeiro, depois os apps
     'core',
+    'apps.contas',
     'apps.prestadores',
     'apps.campanhas',
     'apps.roteiros',
@@ -34,6 +35,7 @@ AUTH_USER_MODEL = 'prestadores.Usuario'
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -79,6 +81,14 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
@@ -103,8 +113,9 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME':  timedelta(hours=8),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS':  True,
-    'TOKEN_OBTAIN_SERIALIZER': 'apps.prestadores.serializers.MarryMeTokenSerializer',
+    'TOKEN_OBTAIN_SERIALIZER': 'apps.contas.serializers.MarryMeTokenSerializer',
 }
+CONVITE_EXPIRACAO_HORAS = config('CONVITE_EXPIRACAO_HORAS', default=48, cast=int)
 ANTHROPIC_API_KEY = config('ANTHROPIC_API_KEY', default='')
 META_ACCESS_TOKEN = config('META_ACCESS_TOKEN', default='')
 META_APP_ID = config('META_APP_ID', default='')

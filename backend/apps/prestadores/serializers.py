@@ -1,13 +1,5 @@
 from rest_framework import serializers
-from .models import Prestador, Usuario
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
-
-class UsuarioSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Usuario
-        fields = ['id', 'username', 'email', 'role']
-        read_only_fields = ['id']
+from .models import Prestador
 
 
 class PrestadorListSerializer(serializers.ModelSerializer):
@@ -52,31 +44,7 @@ class PrestadorSerializer(serializers.ModelSerializer):
         return value.upper()
 
 
-class MarryMeTokenSerializer(TokenObtainPairSerializer):
-    """
-    Token JWT customizado que inclui role e nome do usuário.
-    Retornado no login para o frontend usar sem chamada extra.
-    """
-
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        token['role'] = user.role
-        token['nome'] = user.get_full_name() or user.username
-        return token
-
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        data['role'] = self.user.role
-        data['nome'] = self.user.get_full_name() or self.user.username
-        return data
-
-
 class PortalPrestadorSerializer(serializers.ModelSerializer):
-    """
-    Serializer para o portal do cliente.
-    Expõe apenas dados relevantes para o próprio prestador.
-    """
     health_score_atual = serializers.SerializerMethodField()
     total_sessoes = serializers.SerializerMethodField()
     roteiros_aprovados = serializers.SerializerMethodField()

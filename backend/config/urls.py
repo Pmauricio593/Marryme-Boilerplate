@@ -2,7 +2,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
 from rest_framework_simplejwt.views import TokenRefreshView
-from apps.prestadores.views import MarryMeTokenView
+
+from apps.contas.views.equipe import MarryMeTokenView
 
 
 def health(request):
@@ -14,11 +15,12 @@ urlpatterns = [
     path('health/', health),
     path('admin/', admin.site.urls),
 
-    # Auth
-    path('api/v1/auth/login/',   MarryMeTokenView.as_view(), name='login'),
+    # Auth equipe
+    path('api/v1/auth/login/', MarryMeTokenView.as_view(), name='login'),
     path('api/v1/auth/refresh/', TokenRefreshView.as_view(), name='refresh'),
 
     # Apps
+    path('api/v1/', include('apps.contas.urls')),
     path('api/v1/', include('apps.prestadores.urls')),
     path('api/v1/', include('apps.campanhas.urls')),
     path('api/v1/', include('apps.roteiros.urls')),

@@ -13,15 +13,9 @@ class Usuario(AbstractUser):
             ('sdr', 'SDR'),
             ('dev', 'Dev'),
             ('prestador', 'Prestador'),
+            ('assessoria', 'Assessoria'),
         ],
         default='cs'
-    )
-    prestador_vinculado = models.OneToOneField(
-        'Prestador',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='usuario_acesso',
     )
 
     groups = models.ManyToManyField(
@@ -101,37 +95,3 @@ class Prestador(models.Model):
 
     def __str__(self):
         return f"{self.nome_artistico} ({self.categoria})"
-
-
-class TokenPrimeiroAcesso(models.Model):
-    """
-    Token temporário gerado no cadastro do prestador.
-    Usado para o primeiro acesso e definição de senha.
-    Expira em 48h.
-    """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    usuario = models.ForeignKey(
-        Usuario,
-        on_delete=models.CASCADE,
-        related_name='tokens_acesso'
-    )
-    token = models.CharField(max_length=64, unique=True)
-    usado = models.BooleanField(default=False)
-    criado_em = models.DateTimeField(auto_now_add=True)
-    expira_em = models.DateTimeField()
-
-    class Meta:
-        verbose_name = 'Token de Primeiro Acesso'
-        verbose_name_plural = 'Tokens de Primeiro Acesso'
-
-    def __str__(self):
-        return f"{self.usuario.email} — {'usado' if self.usado else 'pendente'}"
-
-    @property
-    def expirado(self):
-        from django.utils import timezone
-        return timezone.now() > self.expira_em
-
-    @property
-    def valido(self):
-        return not self.usado and not self.expirado

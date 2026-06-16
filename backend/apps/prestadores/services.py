@@ -30,37 +30,14 @@ class PrestadorService:
 
         return prestador
 
-    def criar_acesso_portal(self, prestador) -> str:
+    def criar_acesso_portal(self, prestador) -> str | None:
         """
-        Cria usuário de acesso para o prestador e envia convite.
+        Emite convite de acesso titular — usuário só é criado após aceitar o link.
         Chamado automaticamente quando prestador avança para 'planejamento'.
         """
-        from .models import Usuario
-        from .tokens import gerar_token_acesso
-        from .emails import enviar_convite_acesso
+        from apps.contas.services.convite_service import ConviteService
 
-        if hasattr(prestador, 'usuario_acesso') and prestador.usuario_acesso:
-            logger.info(f"Prestador já tem acesso: {prestador}")
-            return None
-
-        if not prestador.email:
-            logger.warning(f"Prestador sem email, acesso portal não criado: {prestador}")
-            return None
-
-        usuario = Usuario(
-            username=prestador.email,
-            email=prestador.email,
-            role='prestador',
-            prestador_vinculado=prestador,
-        )
-        usuario.set_unusable_password()
-        usuario.save()
-
-        token = gerar_token_acesso(usuario)
-        enviar_convite_acesso(usuario, token, prestador.nome_artistico)
-
-        logger.info(f"Acesso portal criado: {prestador}")
-        return token
+        return ConviteService().emitir_convite_titular(prestador)
 
     def _disparar_pipeline_onboarding(self, prestador: Prestador):
         """Enfileira tasks de geração de materiais para novo cliente."""
