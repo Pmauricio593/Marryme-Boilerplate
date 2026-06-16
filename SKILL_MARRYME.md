@@ -1,519 +1,462 @@
-# Design Engineering Skill — MarryMe
-# Guia completo de construção do site institucional + sistema interno
-# Atualizado: Mai/2026
+# Design & Engineering Skill — MarryMe
+
+Atualizado: Jun/2026  
+Escopo: site institucional, sistema interno, portal do cliente e backend Django.
+
+Este arquivo é guia de implementação. Ele não deve fingir que o frontend completo já existe. O estado real do projeto está em `CURSOR_CONTEXT_MARRYME.md`.
 
 ---
 
-## 1. BASELINE DE DESIGN
+## Baseline de Produto
 
-- **DESIGN_VARIANCE:** 5 (1=Simetria perfeita, 10=Caos artístico)
-- **MOTION_INTENSITY:** 6 (1=Estático, 10=Cinematográfico)
-- **VISUAL_DENSITY:** 3 (1=Galeria de arte/Arejado, 10=Cockpit/Dados compactos)
+A MarryMe opera como agência especializada em crescimento digital para prestadores de casamento.
 
-Tom visual: **sofisticado, confiante e próximo** — nunca frio/corporativo,
-nunca infantil. Referência: mercado de casamentos premium no Brasil.
+Prioridade atual:
 
----
+1. Sistema interno para CS
+2. Dashboard de prestadores, campanhas e Health Score
+3. Chat/roteiros com IA
+4. Portal do cliente
+5. Ajustes de copy do institucional
 
-## 2. STACK — NÃO NEGOCIÁVEL
-
-### Site institucional (Jekyll)
-- **Gerador:** Jekyll estático. Sem Node, Webpack, Vite ou React.
-- **Templates:** Liquid (`.html`). Layouts em `_layouts/`, componentes em `_includes/`.
-- **Dados:** YAML em `_data/` e front matter nas páginas.
-- **Estilos:** Sass/SCSS nativo pelo Jekyll. Todo CSS em `_sass/`, importado por `assets/css/main.scss`.
-- **Interatividade:** Alpine.js via CDN — UI state (menu, acordeon, tabs, filtros, sliders).
-- **Animações:** AOS via CDN para scroll reveals. GSAP + ScrollTrigger via CDN para animações complexas.
-- **Formato:** Apenas `.html` — nunca `.md` nas páginas.
-
-### Backend (Django — Railway)
-- **Framework:** Django 6.0 + Django REST Framework
-- **Auth:** JWT com `djangorestframework-simplejwt`
-- **Filas:** Celery + Redis
-- **IA:** Anthropic Claude (`claude-sonnet-4-6`)
-- **Meta Ads:** Graph API v18.0
-- **Deploy:** Railway (web + celery-worker + celery-beat + PostgreSQL + Redis)
-- **Padrão de código:** View → Service → Integration → Model → Task
-
-### Sistema interno (Next.js — em construção)
-- **Framework:** Next.js 14 App Router + Tailwind CSS
-- **Deploy:** Vercel
-- **Consome:** API Django via JWT
+Prospecção automatizada e Apify não são foco nesta fase.
 
 ---
 
-## 3. ARQUITETURA SCSS MODULAR
+## Baseline Visual
 
+- `DESIGN_VARIANCE`: 5
+- `MOTION_INTENSITY`: 5
+- `VISUAL_DENSITY`: 4 para sistema interno; 3 para institucional
+
+Tom visual:
+
+- Sofisticado
+- Humano
+- Premium sem parecer inacessível
+- Operacionalmente claro no sistema interno
+
+Evitar visual de SaaS genérico, dashboard poluído ou site de agência com clichês.
+
+---
+
+## Stack por Frente
+
+### Site institucional
+
+Status: layout atual preservado; copy ajustável.
+
+Diretriz:
+
+- Não redesenhar agora
+- Não trocar arquitetura visual agora
+- Ajustar textos para clareza, conversão e consistência
+- Manter foco principal em músicos de casamento
+- Introduzir multi-categoria com cuidado, sem diluir a promessa
+
+Se o site estático for reconstruído futuramente:
+
+- Jekyll pode ser usado para institucional
+- Templates Liquid em `.html`
+- Dados em YAML
+- SCSS modular
+- Alpine.js/AOS/GSAP via CDN somente quando fizer sentido
+
+### Sistema interno
+
+Status: Next.js ainda não criado.
+
+Quando criado:
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- Sonner
+- React Hook Form + Zod para formulários relevantes
+- Cliente API centralizado em camada própria
+- Rotas por domínio: auth, prestadores, campanhas, roteiros, portal
+- Componentes organizados por função operacional
+
+### Backend
+
+Status: implementado.
+
+Stack:
+
+- Django
+- Django REST Framework
+- SimpleJWT
+- Celery + Redis
+- PostgreSQL
+- Railway
+- Docker Compose local
+- Claude API
+- Meta Ads API
+
+Padrão:
+
+```text
+View/API -> Service -> Integration -> Model -> Task
 ```
-_sass/
-  _variables.scss       # Cores, tipografia, espaçamento, breakpoints
-  _base.scss            # Reset, body, container, section, links
-  _typography.scss      # Headings, parágrafos, eyebrows, listas
-  _nav.scss             # Topbar, navbar, dropdown, mobile drawer
-  _components.scss      # Botões, badges, pills, cards, tags, inputs
-  _layout.scss          # Grid, container, section spacing
-  _animations.scss      # Keyframes, AOS overrides, prefers-reduced-motion
-  _responsive.scss      # Media queries globais
-
-  global/
-    _hero.scss           # Hero homepage + hero páginas internas
-    _footer.scss         # Footer 4 colunas
-    _cta-contato.scss    # Seção de conversão
-    _depoimentos.scss    # Slider Alpine.js
-    _resultados.scss     # Stats counter
-
-  pages/home/
-    _para-quem.scss      # Cards 5 categorias
-    _como-funciona.scss  # Preview do processo
-    _diferenciais.scss   # Cards diferenciais + Health Score destaque
-    _numeros.scss        # Stats full-width fundo $primary
-
-  pages/sobre/
-    _hero.scss, _historia.scss, _missao-valores.scss, _equipe.scss
-
-  pages/servicos/
-    _hero.scss, _lista-servicos.scss, _health-score.scss, _processo-servico.scss
-
-  pages/clientes/
-    _hero.scss, _filtro.scss, _cases.scss
-
-  pages/como-funciona/
-    _hero.scss, _timeline.scss, _faq.scss
-
-  pages/contato/
-    _hero.scss, _formulario.scss
-```
-
-**Regra:** ao criar nova seção, criar o partial correspondente e importar no `main.scss`.
-Nunca adicionar CSS avulso. Nunca valores hardcoded — sempre variáveis.
 
 ---
 
-## 4. IDENTIDADE VISUAL — REGRAS ABSOLUTAS
+## Identidade Visual
 
 ### Tipografia
-- **Cormorant Garamond** — **exclusivo para títulos, headings e números de destaque**.
-  Nunca no corpo, nav, botões ou labels.
-- **Plus Jakarta Sans** — todo o resto: nav, corpo, botões, badges, labels,
-  formulários, sufixos de stats.
-- Respeitar a escala `$text-xs` a `$text-7xl` do `_variables.scss`.
+
+- Cormorant Garamond: títulos, headings e números de destaque
+- Plus Jakarta Sans: corpo, nav, botões, labels, formulários, dashboards
+
+Nunca usar Inter, Geist ou Poppins no produto MarryMe sem decisão explícita.
 
 ### Cores
-Nunca valores hexadecimais diretos. Sempre variáveis SCSS:
 
+Usar tokens/variáveis. Evitar hex hardcoded espalhado.
+
+Referência:
+
+```scss
+$primary: #1A0A2E;
+$primary-mid: #2D1654;
+$secondary: #C084FC;
+$accent: #E879F9;
+$accent-warm: #F472B6;
+$gold: #D4AF37;
+
+$text-dark: #1A1A2E;
+$text-mid: #4A4A6A;
+$text-muted: #8A8AA8;
+$bg-light: #F8F5FF;
+$bg-white: #FFFFFF;
+$bg-dark: #0F0720;
+$border: #E8E0F0;
+
+$cor-musico: #C084FC;
+$cor-fotografo: #F472B6;
+$cor-celebrante: #34D399;
+$cor-dj: #60A5FA;
+$cor-cerimonialista: #FBBF24;
+
+$hs-low: #EF4444;
+$hs-mid: #F59E0B;
+$hs-good: #10B981;
+$hs-excellent: #6366F1;
 ```
-Fundos escuros:     $bg-dark, $primary, $primary-mid
-Fundos claros:      $bg-white, $bg-light
-CTAs:               $cta, $cta-hover, $secondary
-Texto:              $text-dark, $text-mid, $text-muted
-Categorias:         $cor-{categoria}, $cor-{categoria}-light
-Health Score:       $hs-low, $hs-mid, $hs-good, $hs-excellent
-Bordas:             $border, $border-focus
-Sombras:            $shadow-sm/md/lg/xl, $shadow-glow (só no CTA hover)
-```
 
-### Bordas e superfícies
-- Bordas: `0.5px solid $border`
-- `border-radius` máximo `8px` em cards. Exceção: pills `50px`.
-- Dropdown navbar: única exceção com `box-shadow` (`$shadow-md`).
-- Nunca `box-shadow` decorativo em outros elementos.
+### Bordas, cards e sombras
 
-### Espaçamento
-- Usar sempre a escala `$spacing-xs` a `$spacing-5xl`.
-- Seções com `padding: $spacing-5xl 0` como padrão.
-- Container com `max-width: $container-max` e `margin: 0 auto`.
+- Cards operacionais: raio entre 8px e 12px
+- Pills e badges: raio full
+- Sombras discretas, nunca neon decorativo
+- Bordas leves para estrutura
+- Dashboard deve favorecer legibilidade, não efeito visual
 
 ---
 
-## 5. REGRAS DE ALPINE.JS
+## Copy Institucional
 
-- Diretivas: `x-data`, `x-show`, `x-bind`, `x-on`, `@click`, `x-transition`, `x-init`.
-- Só UI state local — nunca lógica de negócio.
-- Cada componente autocontido no seu `x-data`.
+O site atual fala bem com músicos. A copy deve preservar:
 
-### Padrões implementados
+- Agenda
+- Contratos fechados
+- Funil que fecha
+- Criativos e WhatsApp
+- Comercial e follow-up
+- ROI e processo repetível
 
-**Slider de depoimentos:**
-```html
-<div x-data="{ active: 0, total: 5 }"
-     x-init="setInterval(() => active = (active + 1) % total, 5000)">
-  <div x-show="active === 0" x-transition>...</div>
-  <button @click="active = 0"
-          :class="{ 'is-active': active === 0 }"></button>
-</div>
-```
-Itens empilhados com `position: absolute; inset: 0; opacity: 0`.
-`.is-active { opacity: 1 }` com `transition: opacity 1.2s ease`.
+Padrão de linguagem:
 
-**Filtro de categorias:**
-```html
-<div x-data="{ filtro: 'todos' }">
-  <button @click="filtro = 'musico'"
-          :class="{ 'is-active': filtro === 'musico' }">Músicos</button>
-  <div x-show="filtro === 'todos' || filtro === 'musico'"
-       x-transition>...</div>
-</div>
-```
+- Direto
+- Elegante
+- Sem jargão corporativo
+- Sem promessas irreais
+- Sem inventar números, cases ou depoimentos
 
-**FAQ accordion:**
-```html
-<div x-data="{ aberto: null }">
-  <button @click="aberto = aberto === 0 ? null : 0">Pergunta</button>
-  <div x-show="aberto === 0" x-transition>Resposta</div>
-</div>
-```
+Exemplos de direção:
 
-**Dropdown navbar:**
-Usar `x-transition:enter`, `x-transition:enter-start` com classes CSS.
+- Ruim: "Potencialize sua presença digital com soluções inovadoras."
+- Melhor: "Mais noivos certos chegando no WhatsApp, com campanha, criativo e follow-up trabalhando juntos."
+
+Não alterar layout do institucional nesta fase.
 
 ---
 
-## 6. REGRAS DE ANIMAÇÃO
+## Sistema Interno — UX Prioritária
 
-### AOS
-```html
-data-aos="fade-up" data-aos-delay="100"
-```
-```javascript
-AOS.init({ once: true, duration: 800, easing: 'ease-out-cubic', offset: 80 });
-```
+O sistema é ferramenta de trabalho do time. CS tem prioridade.
 
-### GSAP — regras
-- Animar só `opacity` e `transform` — nunca `width`, `height`, `top/left`.
-- Verificar `prefers-reduced-motion` no início de cada script e fazer `return` se ativo.
-- Nunca misturar AOS e GSAP no mesmo elemento.
-- Scripts GSAP carregados via `extra_js` no front matter da página.
+### Dashboard de prestadores
 
-### Padrões GSAP implementados
+Deve responder rápido:
 
-**Hero timeline:**
-```javascript
-if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-gsap.timeline({ delay: 0.2 })
-  .from('#hero-eyebrow',  { opacity: 0, y: 30, duration: 0.6, ease: 'power3.out' })
-  .from('#hero-title',    { opacity: 0, y: 30, duration: 0.7, ease: 'power3.out' }, '-=0.3')
-  .from('#hero-subtitle', { opacity: 0, y: 30, duration: 0.6, ease: 'power3.out' }, '-=0.3')
-  .from('#hero-ctas',     { opacity: 0, y: 30, duration: 0.5, ease: 'power3.out' }, '-=0.2');
-```
+- Quem está em risco?
+- Quem precisa de reunião?
+- Quem está sem atualização?
+- Quem está em onboarding?
+- Quem está pronto para growth/renovação?
 
-**Character-level text splitting (hero):**
-Título dividido em `<span class="hero__char">` para stagger granular (`stagger: 0.028`).
-Espaços recebem classe `--space` com `width: 0.3em`.
+Estados obrigatórios:
 
-**Counter animado:**
-```javascript
-ScrollTrigger.create({
-  trigger: '.numeros-section', start: 'top 80%', once: true,
-  onEnter: () => {
-    document.querySelectorAll('.counter').forEach(el => {
-      gsap.fromTo(el, { textContent: 0 }, {
-        textContent: parseInt(el.dataset.target),
-        duration: 2, ease: 'expo.out',
-        snap: { textContent: 1 },
-        onUpdate() { el.textContent = Math.round(parseFloat(el.textContent)).toLocaleString('pt-BR'); }
-      });
-    });
-  }
-});
-```
-Número em `<strong>` (Cormorant), sufixo em `<span>` (Jakarta) — animação só no `<strong>`.
-Entrada com `elastic.out(1, 0.5)` para bounce nos stats.
+- Loading
+- Erro
+- Lista vazia
+- Filtro sem resultado
 
-**Health Score gauge (exclusivo MarryMe):**
-```javascript
-// Arc SVG com strokeDashoffset animado
-// Cor dinâmica por faixa:
-// 0–39:   $hs-low     #EF4444
-// 40–59:  $hs-mid     #F59E0B
-// 60–79:  $hs-good    #10B981
-// 80–100: $hs-excellent #6366F1
-// ease: 'power2.inOut', duration: 1.5, ativado por ScrollTrigger
-```
+### Detalhe do prestador
 
-**SVG stroke draw:**
-```javascript
-document.querySelectorAll('.draw-path').forEach(path => {
-  const len = path.getTotalLength();
-  gsap.set(path, { strokeDasharray: len, strokeDashoffset: len });
-  gsap.to(path, { strokeDashoffset: 0, ease: 'power2.inOut',
-                  stagger: 0.35, scrollTrigger: { trigger: path, start: 'top 85%' } });
-});
-```
+Deve concentrar:
 
-**Split reveal (2 colunas):**
-Esquerda: `x: -60`, direita: `x: 60`. Overlap `-=0.6`.
+- Dados comerciais
+- Fase
+- Responsável
+- Campanhas
+- Health Score
+- Roteiros
+- Histórico operacional
 
-**Parallax decorativo:**
-```javascript
-gsap.to('.hero__deco', { y: 80, ease: 'none',
-  scrollTrigger: { trigger: '.hero', scrub: 1.2 } });
-```
-Nunca aplicar parallax no container de conteúdo — só em decorações.
+### Campanhas e Health Score
 
-**Timeline do processo (como-funciona):**
-Etapas entram individualmente com `scrub: 1`. Números das etapas como counter em sequência.
-Linha conectora com `height` controlada por `ScrollTrigger.scrub`.
+Não mostrar apenas número. Sempre traduzir em ação:
+
+- Saudável: manter/otimizar
+- Atenção: revisar criativo, orçamento, campanha ou comercial
+- Risco: pauta urgente de CS
+
+### Roteiros
+
+Prioridade de UX:
+
+- Chat por prestador
+- Histórico por sessão
+- Upload/arquivos futuramente
+- Streaming de resposta
+- Roteiro final separado da conversa
+- Aprovação do roteiro final
 
 ---
 
-## 7. COMPONENTES — REFERÊNCIA DE IMPLEMENTAÇÃO
+## Portal do Cliente
 
-### Navbar
-- Topbar sticky (`z-index: 201`), fundo `$primary`, links brancos.
-  Instagram e WhatsApp à direita, "Atendemos todo o Brasil" à esquerda.
-- Navbar sticky abaixo. Fundo `$bg-white`, `border-bottom: 0.5px solid $border`.
-- Logo SVG à esquerda, links centralizados, CTA à direita.
-- Dropdown de Categorias: grid 5 itens com bolinha na cor da categoria.
-- Menu mobile: drawer full-width com Alpine.js toggle.
-- Botão CTA: `btn--pill` com `border-radius: 50px`.
+O portal deve ser uma camada de clareza para o prestador, não um dashboard técnico.
 
-### Hero Homepage
-- Gradiente `$bg-dark → $primary`.
-- Círculos desfocados: `$secondary` e `$accent` em opacidade 0.06–0.15.
-- Parallax nos círculos via ScrollTrigger.
-- Stats abaixo dos CTAs com `border-top: 0.5px solid rgba(255,255,255,0.1)`.
+Prestador deve ver:
 
-### Hero Páginas Internas
-- Split-screen: texto esquerda + asset visual direita.
-- Fundo `$primary` com overlay gradiente diagonal.
-- Eyebrow em `$secondary` para contraste no fundo escuro.
-- Split reveal GSAP ao entrar na viewport.
+- Perfil e dados próprios
+- Campanhas principais
+- Health Score traduzido
+- Roteiros aprovados
+- Próximos passos simples
 
-### Cards de Categoria (Para Quem)
-- Grid 5 colunas desktop, 3 tablet, 2 mobile.
-- Fundo: `$cor-*-light`. Border: `1px solid $border`.
-- Hover: border muda para `$cor-*` cheia, `translateY(-4px)`, `$shadow-md`.
-- Bolinha 48px na cor da categoria com ícone SVG.
-- AOS `fade-up` com delay escalonado por card (0, 100, 200ms...).
+Prestador não deve ver:
 
-### Health Score (Gauge exclusivo)
-- Arc SVG com `stroke-dashoffset` animado por ScrollTrigger.
-- Cor dinâmica por faixa (`$hs-*`).
-- Número central Cormorant Garamond `$text-5xl`.
-- Label da faixa abaixo (Crítico / Atenção / Bom / Excelente).
-- Breakdown dos 5 componentes com barras de progresso menores.
-- Badge "Exclusivo MarryMe" em `$secondary`.
-
-### Números / Stats
-- Fundo `$primary` full-width. Grid 4 colunas.
-- Número em `<strong>` Cormorant `$text-6xl`, sufixo em `<span>` Jakarta.
-- Counter GSAP com `elastic.out(1, 0.5)` ao entrar na viewport.
-- Dados reais: 42+ prestadores, 12+ estados, Health Score médio 58.
-
-### Depoimentos (Slider)
-- Alpine.js auto-play 5s.
-- Card: `max-width: 720px`, centrado, `$shadow-lg`, `$radius-xl`.
-- Aspas decorativas: Cormorant `$text-7xl`, cor `$secondary` opacity 0.3.
-- Foto circular 56px, nome, categoria + cidade, badge de resultado.
-- Dots: 8px → 24px pill quando ativa, cor `$secondary`.
-- Nomes reais: Airton Sax, Rony Ribeiro, Padre Beto, Kanirê Musical.
-
-### Filtro de Categorias (Clientes)
-- Pills Alpine.js clicáveis.
-- Inativa: `border: 1px solid $border`, fundo `$bg-white`.
-- Ativa: `background: $cor-*`, texto branco, `$shadow-sm`.
-- Cards com `x-show` + `x-transition`.
-
-### CTA Final de Página
-- Fundo `$bg-dark` com círculo desfocado `$accent` opacity 0.06.
-- Headline Cormorant Garamond `$text-5xl` branca.
-- 2 botões: primary (`$cta`) e outline WhatsApp.
-- Prova social: "12+ estados brasileiros atendidos".
-
-### Footer
-- Fundo `$primary`. Grid 4 colunas.
-- Col 1: logo branco, tagline, social icons SVG.
-- Col 2: links de navegação.
-- Col 3: 5 categorias com bolinha colorida.
-- Col 4: contato direto + botão WhatsApp.
-- `border-top: 0.5px solid rgba(255,255,255,0.1)`.
-
-### Timeline de Processo
-- Barra vertical central: gradiente `$secondary → $accent`.
-- Etapas em zig-zag com `scrub: 1` ScrollTrigger.
-- Cards com border que ativa `$secondary` quando `.is-active`.
-- Badges de duração em `$secondary` opacity 0.15.
-- Checkmarks SVG na cor `$accent`.
+- Dados de outros clientes
+- Configurações internas
+- Prompts internos
+- Chaves, logs ou detalhes técnicos
 
 ---
 
-## 8. HEALTH SCORE — CONTEXTO COMPLETO PARA O SITE
+## Backend — Regras de Código
 
-O Health Score é a métrica exclusiva da MarryMe e o maior diferencial
-competitivo a ser comunicado no site.
+### Configuração
 
-**O que o visitante precisa entender:**
-- É um número de 0 a 100 calculado automaticamente
-- Mede a saúde real da campanha (não só o gasto)
-- Calculado com 5 componentes ponderados
-- Atualizado toda segunda-feira automaticamente
-- Disponível no portal do cliente em tempo real
+- Tudo por env vars
+- Nunca hardcodar secrets
+- `.env` apenas local e ignorado pelo Git
+- Serviços externos tratados como backing services
 
-**Faixas para o site:**
-- 80–100: Excelente — campanha otimizada, resultados acima da média
-- 60–79: Bom — campanha saudável com espaço para melhorias
-- 40–59: Atenção — pontos de melhoria identificados
-- 0–39: Crítico — ação imediata necessária
+### Organização
 
-**Como mostrar no site:**
-- Arc SVG animado com cor dinâmica
-- Breakdown dos 5 componentes (barras menores)
-- Exemplo real: "Airton Sax — HS 72 — Bom"
-- Badge "Exclusivo MarryMe" — nenhuma outra agência tem isso
+- Views finas
+- Services com regra de negócio
+- Integrations para APIs externas
+- Tasks para processos assíncronos
+- Serializers como contrato de entrada/saída
+
+### Logs e processos
+
+- Logs em stdout
+- Sem arquivos de runtime versionados
+- Processos stateless
+- Celery para trabalho demorado
+
+### Segurança
+
+- API keys nunca no frontend
+- Portal sempre filtrado por `prestador_vinculado`
+- Validar role antes de expor ação sensível
+- Evitar retornos com stack trace ou detalhes internos
 
 ---
 
-## 9. PADRÕES DE DADOS (_data/)
+## Frontend — Regras de Código
 
-### categorias.yml
-```yaml
-- id: musico
-  nome: "Músico e Banda"
-  slug: musico
-  descricao: "Solos, duetos e bandas que fazem o casamento inesquecível"
-  cor: "#C084FC"
-  cor_light: "#F3E8FF"
-  exemplos: ["Solo de violão", "Banda ao vivo", "Cantor gospel"]
+Quando o Next.js for criado:
 
-- id: fotografo
-  nome: "Fotógrafo e Videomaker"
-  slug: fotografo
-  descricao: "Registros que contam a história do dia mais especial"
-  cor: "#F472B6"
-  cor_light: "#FDF2F8"
-  exemplos: ["Foto documental", "Drone", "Filme de casamento"]
+### Estrutura sugerida
+
+```text
+frontend/
+├── app/
+│   ├── (auth)/
+│   ├── (dashboard)/
+│   └── portal/
+├── components/
+│   ├── ui/
+│   ├── layout/
+│   └── domain/
+├── lib/
+│   ├── api/
+│   ├── auth/
+│   └── utils/
+├── types/
+└── styles/
 ```
 
-### resultados.yml
-```yaml
-- label: "prestadores ativos"
-  valor: 42
-  sufixo: "+"
-- label: "estados brasileiros"
-  valor: 12
-  sufixo: "+"
-- label: "health score médio"
-  valor: 58
-  sufixo: ""
-- label: "leads gerados"
-  valor: 3200
-  sufixo: "+"
+### Padrões
+
+- `lib/api` concentra fetch/client
+- `types` espelha serializers importantes
+- Componentes de domínio não devem conter fetch direto
+- Usar server/client components com critério
+- `sonner` para feedback
+- Nunca `alert()`
+- Skeletons para telas de CS
+- Lazy loading para telas pesadas
+
+---
+
+## Integração Frontend ↔ Backend
+
+Base local:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 ```
 
-### processo.yml
-```yaml
-- numero: 1
-  titulo: "Onboarding"
-  duracao: "Semana 1"
-  descricao: "Entrevista completa, levantamento de materiais e análise estratégica"
-  entregaveis:
-    - "Checklist de informações preenchido"
-    - "Análise estratégica de posicionamento"
-    - "Direção criativa inicial"
+Produção temporária:
 
-- numero: 2
-  titulo: "Planejamento de Metas"
-  duracao: "Semanas 2-3"
-  descricao: "Definição de CPL alvo, orçamento e metas de leads mensais"
-  entregaveis:
-    - "Metas de CPL por nicho"
-    - "Orçamento mensal definido"
-    - "Calendário de conteúdo"
+```env
+NEXT_PUBLIC_API_URL=https://web-production-62d5c.up.railway.app/api/v1
 ```
 
----
+Produção ideal:
 
-## 10. INTEGRAÇÃO COM O BACKEND
-
-O site Jekyll é estático — não consome a API Django diretamente.
-O formulário de contato envia para a API via fetch no JavaScript:
-
-```javascript
-// assets/js/main.js
-document.querySelector('#form-contato').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const dados = Object.fromEntries(new FormData(e.target));
-  const res = await fetch('https://web-production-62d5c.up.railway.app/contato/', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dados)
-  });
-  // mostrar feedback para o usuário
-});
+```env
+NEXT_PUBLIC_API_URL=https://api.marryme.com.br/api/v1
 ```
 
----
+Auth:
 
-## 11. PERFORMANCE
+```http
+Authorization: Bearer <access_token>
+```
 
-- Hardware acceleration: só `transform` e `opacity`
-- Z-index: topbar 201, navbar 200, dropdown 9999, hero 1, toast 500, WhatsApp 500
-- `backdrop-filter` em pseudo-elemento `::before` (não no pai) para não quebrar z-index
-- `font-display: swap` + preconnect `fonts.googleapis.com` e `fonts.gstatic.com`
-- `loading="lazy"` em todas as imagens (exceto primeira de slideshow)
-- SVG para ícones e logos, WebP para fotos
-- `will-change` só no dropdown e animações contínuas
-- `prefers-reduced-motion` verificado no início de cada script GSAP
-- Scripts pesados só nas páginas que precisam via `extra_js` no front matter
+Fluxos prioritários:
 
----
-
-## 12. PADRÕES PROIBIDOS (Anti-IA)
-
-### Visual
-- Sem glows neon (exceção: `$shadow-glow` no CTA hover)
-- Sem preto puro — usar `$text-dark` (#1A1A2E)
-- Sem gradientes em texto de headers grandes
-- Sem sombras decorativas — marca usa bordas 0.5px
-- Sem `border-radius` > 8px em cards (50px só em pills, 12px em dropdown)
-
-### Tipografia
-- Nunca Inter, Geist, Poppins ou qualquer outra fonte
-- Nunca Cormorant Garamond no corpo, nav ou botões
-
-### Layout
-- Sem grids genéricos de 3 cards iguais quando DESIGN_VARIANCE > 4
-  → usar magazine grid, zig-zag, grid assimétrico ou carrossel
-- Padding e margins sempre pela escala `$spacing-*`
-
-### Conteúdo
-- Sem nomes genéricos — usar Airton Sax, Rony Ribeiro, Padre Beto,
-  Kanirê Musical, Stella Ferreira
-- Sem números fake — usar 42 prestadores, 12+ estados, HS 58
-- Sem clichês — "Elevate", "Seamless", "Next-Gen", "Unleash" são proibidos
-- Sem lorem ipsum — usar textos reais da MarryMe
-
-### Técnico
-- ANTI-EMOJI: nunca emojis em código, markup ou conteúdo
-- Nunca arquivos `.md` para páginas — apenas `.html`
-- Nunca animar `width`, `height`, `top`, `left`
-- Nunca `!important` (exceção: `_animations.scss` para `prefers-reduced-motion`)
+1. Login equipe
+2. Listagem de prestadores
+3. Detalhe do prestador
+4. Health Score e relatórios
+5. Sessões de roteiro
+6. Portal do cliente
 
 ---
 
-## 13. PRE-FLIGHT CHECK
+## Animações e Performance
 
-Antes de entregar qualquer código, verificar:
+### Site institucional
 
-- [ ] Todas as cores vêm de variáveis SCSS do `_variables.scss`?
-- [ ] Cormorant Garamond só em headings e números de destaque?
-- [ ] Plus Jakarta Sans em todo o resto?
-- [ ] Mobile colapsa corretamente para coluna única?
-- [ ] Hero usa `min-height` e nunca `height` fixo?
-- [ ] Animações usam só `transform` e `opacity`?
-- [ ] `prefers-reduced-motion` verificado no início do script GSAP?
-- [ ] Imagens com `loading="lazy"` e `alt` descritivo?
-- [ ] Nenhum `!important` (exceto `_animations.scss`)?
-- [ ] Bordas `0.5px solid $border`, border-radius máx `8px` em cards?
-- [ ] Novo partial SCSS criado e importado no `main.scss`?
-- [ ] Script GSAP da página usa `extra_js` no front matter?
-- [ ] Sliders usam padrão Alpine (`x-data` + `setInterval` + `is-active`)?
-- [ ] Focus-visible em todos os elementos clicáveis?
-- [ ] Z-index respeita hierarquia (topbar 201, navbar 200, dropdown 9999)?
-- [ ] Health Score usa `$hs-*` corretas por faixa?
-- [ ] Cards de categoria usam `$cor-*` e `$cor-*-light`?
-- [ ] Nenhum emoji em código ou conteúdo?
-- [ ] Dados reais (nomes reais, números reais da MarryMe)?
-- [ ] CTA hover usa `$shadow-glow` e não outro shadow?
-- [ ] Nenhum valor hardcoded de cor, fonte ou espaçamento?
-- [ ] Imagens de prestadores com `object-position: center top`?
+- Animar apenas `transform` e `opacity`
+- Respeitar `prefers-reduced-motion`
+- Não misturar AOS e GSAP no mesmo elemento
+- Imagens com `loading="lazy"` quando possível
+- SVG para ícones
+- WebP para imagens reais
+
+### Sistema interno
+
+- Priorizar velocidade e clareza
+- Evitar animações que atrasem fluxo de trabalho
+- Skeletons simples
+- Tabelas/listas performáticas
+- Evitar renderizar listas grandes sem paginação ou virtualização
+
+---
+
+## Health Score
+
+Health Score é métrica operacional central para CS e diferencial de produto para o cliente.
+
+Deve sempre responder:
+
+- Qual a saúde da campanha?
+- Por que está assim?
+- O que CS deve fazer agora?
+
+Faixas:
+
+- 70+ saudável
+- 40-69 atenção
+- abaixo de 40 em risco
+
+Ao comunicar para cliente, traduzir em linguagem simples. Ao comunicar para equipe, mostrar breakdown e recomendação.
+
+---
+
+## Proibições
+
+- Não criar prospecção/Apify agora
+- Não criar novo `.md` sem necessidade
+- Não inventar métricas, depoimentos ou números
+- Não expor API keys no frontend
+- Não usar `alert()`
+- Não fazer refatoração ampla sem ganho operacional claro
+- Não redesenhar institucional nesta fase
+- Não tratar frontend Next.js como existente antes de ser criado
+
+---
+
+## Checklist de Entrega
+
+### Antes de mexer no backend
+
+- [ ] A mudança pertence a app existente?
+- [ ] Afeta CS?
+- [ ] Afeta portal/prestador?
+- [ ] Precisa de migration?
+- [ ] Usa env var para config externa?
+- [ ] Mantém secrets fora do Git?
+
+### Antes de mexer no frontend
+
+- [ ] Endpoint real existe?
+- [ ] Contrato do serializer foi conferido?
+- [ ] Tem loading/erro/vazio?
+- [ ] Auth e roles foram considerados?
+- [ ] Não há API key no client?
+- [ ] Toast usa Sonner?
+
+### Antes de mexer no institucional
+
+- [ ] Layout foi preservado?
+- [ ] Copy mantém foco em músicos?
+- [ ] Não há dados inventados?
+- [ ] CTA está claro?
+- [ ] Tom segue MarryMe?
+
+---
+
+## Ordem Recomendada de Construção
+
+1. Consolidar backend e permissões dos apps existentes
+2. Criar frontend Next.js com login e shell do dashboard
+3. Criar dashboard de prestadores para CS
+4. Criar detalhe do prestador
+5. Integrar campanhas e Health Score
+6. Integrar roteiros/chat
+7. Criar portal do cliente
+8. Ajustar copy institucional
+9. Só depois avaliar prospecção
+
