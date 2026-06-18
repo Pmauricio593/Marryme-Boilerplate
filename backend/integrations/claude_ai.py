@@ -1,9 +1,10 @@
-import anthropic
 import logging
-from django.conf import settings
-from typing import Generator
+from collections.abc import Generator
 
-logger = logging.getLogger('marryme.integrations.claude')
+import anthropic
+from django.conf import settings
+
+logger = logging.getLogger("marryme.integrations.claude")
 
 
 class ClaudeClient:
@@ -11,12 +12,7 @@ class ClaudeClient:
         self.client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
         self.model = settings.CLAUDE_MODEL
 
-    def chat(
-        self,
-        system: str,
-        messages: list,
-        max_tokens: int = 2048
-    ) -> str:
+    def chat(self, system: str, messages: list, max_tokens: int = 2048) -> str:
         """
         Chamada simples — retorna resposta completa.
         Usar para análises, roteiros e processamento em background.
@@ -37,10 +33,7 @@ class ClaudeClient:
             raise
 
     def chat_stream(
-        self,
-        system: str,
-        messages: list,
-        max_tokens: int = 2048
+        self, system: str, messages: list, max_tokens: int = 2048
     ) -> Generator[str, None, None]:
         """
         Chamada com streaming — retorna gerador de chunks.
@@ -54,18 +47,13 @@ class ClaudeClient:
                 system=system,
                 messages=messages,
             ) as stream:
-                for text in stream.text_stream:
-                    yield text
+                yield from stream.text_stream
         except Exception as e:
             logger.error(f"Erro Claude stream: {e}")
             raise
 
     def analisar_pdf(
-        self,
-        system: str,
-        mensagem: str,
-        pdf_base64: str,
-        max_tokens: int = 4096
+        self, system: str, mensagem: str, pdf_base64: str, max_tokens: int = 4096
     ) -> str:
         """
         Analisa PDF enviado como base64.
@@ -87,13 +75,10 @@ class ClaudeClient:
                                     "type": "base64",
                                     "media_type": "application/pdf",
                                     "data": pdf_base64,
-                                }
+                                },
                             },
-                            {
-                                "type": "text",
-                                "text": mensagem
-                            }
-                        ]
+                            {"type": "text", "text": mensagem},
+                        ],
                     }
                 ],
                 betas=["pdfs-2024-09-25"],

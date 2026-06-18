@@ -1,9 +1,11 @@
 import logging
-from integrations.claude_ai import ClaudeClient
-from apps.prestadores.models import Prestador
-from .models import ChatSessao, ChatMensagem, RoteiroFinal
 
-logger = logging.getLogger('marryme.roteiros')
+from apps.prestadores.models import Prestador
+from integrations.claude_ai import ClaudeClient
+
+from .models import ChatMensagem, ChatSessao, RoteiroFinal
+
+logger = logging.getLogger("marryme.roteiros")
 
 
 class FewShotService:
@@ -17,17 +19,21 @@ class FewShotService:
         Retorna até 3 roteiros aprovados da mesma categoria e tipo.
         Ordena pelos mais recentes para usar os mais atuais como referência.
         """
-        roteiros = RoteiroFinal.objects.filter(
-            aprovado=True,
-            tipo=tipo,
-            prestador__categoria=categoria,
-        ).select_related('prestador').order_by('-criado_em')[:limite]
+        roteiros = (
+            RoteiroFinal.objects.filter(
+                aprovado=True,
+                tipo=tipo,
+                prestador__categoria=categoria,
+            )
+            .select_related("prestador")
+            .order_by("-criado_em")[:limite]
+        )
 
         return [
             {
-                'prestador': r.prestador.nome_artistico,
-                'categoria': r.prestador.get_categoria_display(),
-                'conteudo': r.conteudo_json,
+                "prestador": r.prestador.nome_artistico,
+                "categoria": r.prestador.get_categoria_display(),
+                "conteudo": r.conteudo_json,
             }
             for r in roteiros
         ]
@@ -35,21 +41,20 @@ class FewShotService:
     def formatar_exemplos(self, exemplos: list) -> str:
         """Formata os exemplos para injeção no system prompt."""
         if not exemplos:
-            return ''
+            return ""
 
         linhas = [
-            '\n## EXEMPLOS DE ROTEIROS APROVADOS\n'
-            'Use esses exemplos como referência de tom, '
-            'estrutura e qualidade — adapte para o prestador atual.\n'
+            "\n## EXEMPLOS DE ROTEIROS APROVADOS\n"
+            "Use esses exemplos como referência de tom, "
+            "estrutura e qualidade — adapte para o prestador atual.\n"
         ]
 
         for i, ex in enumerate(exemplos, 1):
             linhas.append(
-                f"\n### Exemplo {i} — {ex['prestador']} ({ex['categoria']})\n"
-                f"{ex['conteudo']}\n"
+                f"\n### Exemplo {i} — {ex['prestador']} ({ex['categoria']})\n" f"{ex['conteudo']}\n"
             )
 
-        return '\n'.join(linhas)
+        return "\n".join(linhas)
 
 
 class ChatService:
@@ -62,11 +67,7 @@ class ChatService:
         self.claude = ClaudeClient()
         self.few_shot = FewShotService()
 
-    def montar_system_prompt(
-        self,
-        prestador: Prestador,
-        tipo: str = 'geral'
-    ) -> str:
+    def montar_system_prompt(self, prestador: Prestador, tipo: str = "geral") -> str:
         """
         Combina dados do prestador + few-shot de exemplos aprovados.
         Um único prompt por sessão, montado em tempo real.
@@ -103,16 +104,11 @@ Health Score atual: {prestador.health_score or 'não calculado'}
 {bloco_fewshot}
 """.strip()
 
-    def processar_mensagem(
-        self,
-        sessao: ChatSessao,
-        mensagem: str,
-        arquivos: list = None
-    ) -> str:
+    def processar_mensagem(self, sessao: ChatSessao, mensagem: str, arquivos: list = None) -> str:
         """Processa mensagem e retorna resposta completa."""
         ChatMensagem.objects.create(
             sessao=sessao,
-            role='user',
+            role="user",
             content=mensagem,
             arquivos=arquivos or [],
         )
@@ -128,29 +124,23 @@ Health Score atual: {prestador.health_score or 'não calculado'}
 
         ChatMensagem.objects.create(
             sessao=sessao,
-            role='assistant',
+            role="assistant",
             content=resposta,
         )
 
         sessao.tokens_usados += len(mensagem.split()) + len(resposta.split())
-        sessao.save(update_fields=['tokens_usados', 'atualizado_em'])
+        sessao.save(update_fields=["tokens_usados", "atualizado_em"])
 
         logger.info(
-            f"Chat processado: {sessao.prestador} / "
-            f"sessão {sessao.id} / tipo {sessao.tipo}"
+            f"Chat processado: {sessao.prestador} / " f"sessão {sessao.id} / tipo {sessao.tipo}"
         )
         return resposta
 
-    def processar_stream(
-        self,
-        sessao: ChatSessao,
-        mensagem: str,
-        arquivos: list = None
-    ):
+    def processar_stream(self, sessao: ChatSessao, mensagem: str, arquivos: list = None):
         """Streaming via Server-Sent Events — chunks em tempo real."""
         ChatMensagem.objects.create(
             sessao=sessao,
-            role='user',
+            role="user",
             content=mensagem,
             arquivos=arquivos or [],
         )
@@ -163,26 +153,23 @@ Health Score atual: {prestador.health_score or 'não calculado'}
             resposta_completa.append(chunk)
             yield chunk
 
-        texto_final = ''.join(resposta_completa)
+        texto_final = "".join(resposta_completa)
         ChatMensagem.objects.create(
             sessao=sessao,
-            role='assistant',
+            role="assistant",
             content=texto_final,
         )
-        sessao.save(update_fields=['atualizado_em'])
-        logger.info(
-            f"Stream concluído: {sessao.prestador} / sessão {sessao.id}"
-        )
+        sessao.save(update_fields=["atualizado_em"])
+        logger.info(f"Stream concluído: {sessao.prestador} / sessão {sessao.id}")
 
     # ── Helpers ──────────────────────────────────────────────────
 
     def _montar_historico(self, sessao: ChatSessao) -> list:
         return [
-            {'role': m.role, 'content': m.content}
-            for m in sessao.mensagens.order_by('criado_em')
+            {"role": m.role, "content": m.content} for m in sessao.mensagens.order_by("criado_em")
         ]
 
     def _formatar_dict(self, dados: dict) -> str:
         if not dados:
-            return 'Não informado.'
-        return '\n'.join(f"- {k}: {v}" for k, v in dados.items())
+            return "Não informado."
+        return "\n".join(f"- {k}: {v}" for k, v in dados.items())

@@ -1,13 +1,12 @@
-from django.db import models
 import uuid
+
+from django.db import models
 
 
 class MetricaMeta(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     prestador = models.ForeignKey(
-        'prestadores.Prestador',
-        on_delete=models.CASCADE,
-        related_name='metricas'
+        "prestadores.Prestador", on_delete=models.CASCADE, related_name="metricas"
     )
     data_referencia = models.DateField()
     campanha_id = models.CharField(max_length=100)
@@ -22,9 +21,9 @@ class MetricaMeta(models.Model):
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-data_referencia']
-        verbose_name = 'Métrica Meta'
-        verbose_name_plural = 'Métricas Meta'
+        ordering = ["-data_referencia"]
+        verbose_name = "Métrica Meta"
+        verbose_name_plural = "Métricas Meta"
 
     def __str__(self):
         return f"{self.prestador} — {self.data_referencia}"
@@ -32,16 +31,14 @@ class MetricaMeta(models.Model):
 
 class HealthScore(models.Model):
     STATUS = [
-        ('saudavel', 'Saudável'),
-        ('atencao', 'Atenção'),
-        ('em_risco', 'Em Risco'),
+        ("saudavel", "Saudável"),
+        ("atencao", "Atenção"),
+        ("em_risco", "Em Risco"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     prestador = models.ForeignKey(
-        'prestadores.Prestador',
-        on_delete=models.CASCADE,
-        related_name='health_scores'
+        "prestadores.Prestador", on_delete=models.CASCADE, related_name="health_scores"
     )
     data_calculo = models.DateField()
     score = models.IntegerField()
@@ -51,16 +48,15 @@ class HealthScore(models.Model):
     score_leads = models.IntegerField()
     score_ctr = models.IntegerField()
     cpl_real = models.DecimalField(max_digits=10, decimal_places=2, null=True)
-    gasto_real = models.DecimalField(
-        max_digits=10, decimal_places=2, null=True)
+    gasto_real = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     leads_real = models.IntegerField(null=True)
     roi = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-data_calculo']
-        verbose_name = 'Health Score'
-        verbose_name_plural = 'Health Scores'
+        ordering = ["-data_calculo"]
+        verbose_name = "Health Score"
+        verbose_name_plural = "Health Scores"
 
     def __str__(self):
         return f"{self.prestador} — Score {self.score} ({self.status})"
@@ -69,9 +65,7 @@ class HealthScore(models.Model):
 class RelatorioIA(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     prestador = models.ForeignKey(
-        'prestadores.Prestador',
-        on_delete=models.CASCADE,
-        related_name='relatorios'
+        "prestadores.Prestador", on_delete=models.CASCADE, related_name="relatorios"
     )
     periodo_inicio = models.DateField()
     periodo_fim = models.DateField()
@@ -81,9 +75,9 @@ class RelatorioIA(models.Model):
     gerado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-gerado_em']
-        verbose_name = 'Relatório IA'
-        verbose_name_plural = 'Relatórios IA'
+        ordering = ["-gerado_em"]
+        verbose_name = "Relatório IA"
+        verbose_name_plural = "Relatórios IA"
 
     def __str__(self):
         return f"{self.prestador} — {self.periodo_inicio} a {self.periodo_fim}"
@@ -91,9 +85,17 @@ class RelatorioIA(models.Model):
 
 class ConfiguracaoMeta(models.Model):
     """Armazena configurações dinâmicas — token Meta, etc."""
+
     chave = models.CharField(max_length=100, unique=True)
     valor = models.TextField()
     atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Configuração Meta"
+        verbose_name_plural = "Configurações Meta"
+
+    def __str__(self):
+        return self.chave
 
     @classmethod
     def get(cls, chave: str):
@@ -104,11 +106,4 @@ class ConfiguracaoMeta(models.Model):
 
     @classmethod
     def set(cls, chave: str, valor: str):
-        cls.objects.update_or_create(
-            chave=chave,
-            defaults={'valor': valor}
-        )
-
-    class Meta:
-        verbose_name = 'Configuração Meta'
-        verbose_name_plural = 'Configurações Meta'
+        cls.objects.update_or_create(chave=chave, defaults={"valor": valor})

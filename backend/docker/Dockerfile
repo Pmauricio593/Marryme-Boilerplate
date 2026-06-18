@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12-alpine
 
 # Evita arquivos .pyc e garante logs em tempo real
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -6,16 +6,13 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Dependências do sistema necessárias para o psycopg2 e compilações
-RUN apt-get update && apt-get install -y \
-    libpq-dev \
-    gcc \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# curl: healthcheck do compose; bash: entrypoint.sh
+# psycopg2-binary já traz wheel — sem libpq-dev/gcc
+RUN apk add --no-cache curl bash
 
-# Instala dependências Python
-COPY requirements/base.txt .
-RUN pip install --no-cache-dir -r base.txt
+# Instala dependências Python (base + dev para lint/test no container web)
+COPY requirements/base.txt requirements/dev.txt ./
+RUN pip install --no-cache-dir -r dev.txt
 
 # Copia o código
 COPY . .

@@ -1,35 +1,35 @@
 class NivelAcesso:
-    ADMIN = 'admin'
-    EQUIPE = 'equipe'
-    PRESTADOR = 'prestador'
-    ASSESSORIA = 'assessoria'
+    ADMIN = "admin"
+    EQUIPE = "equipe"
+    PRESTADOR = "prestador"
+    ASSESSORIA = "assessoria"
 
 
-ROLES_EQUIPE = ('cs', 'sdr', 'dev')
-ROLES_PORTAL = ('prestador', 'assessoria')
-ROLES_INTERNOS = ('admin',) + ROLES_EQUIPE
+ROLES_EQUIPE = ("cs", "sdr", "dev")
+ROLES_PORTAL = ("prestador", "assessoria")
+ROLES_INTERNOS = ("admin",) + ROLES_EQUIPE
 
 ROLE_PARA_NIVEL = {
-    'admin': NivelAcesso.ADMIN,
-    'cs': NivelAcesso.EQUIPE,
-    'sdr': NivelAcesso.EQUIPE,
-    'dev': NivelAcesso.EQUIPE,
-    'prestador': NivelAcesso.PRESTADOR,
-    'assessoria': NivelAcesso.ASSESSORIA,
+    "admin": NivelAcesso.ADMIN,
+    "cs": NivelAcesso.EQUIPE,
+    "sdr": NivelAcesso.EQUIPE,
+    "dev": NivelAcesso.EQUIPE,
+    "prestador": NivelAcesso.PRESTADOR,
+    "assessoria": NivelAcesso.ASSESSORIA,
 }
 
 PERMISSOES_TITULAR = {
-    'perfil': True,
-    'campanhas': True,
-    'health_score': True,
-    'roteiros': True,
+    "perfil": True,
+    "campanhas": True,
+    "health_score": True,
+    "roteiros": True,
 }
 
 PERMISSOES_ASSESSORIA_DEFAULT = {
-    'perfil': True,
-    'campanhas': True,
-    'health_score': True,
-    'roteiros': False,
+    "perfil": True,
+    "campanhas": True,
+    "health_score": True,
+    "roteiros": False,
 }
 
 

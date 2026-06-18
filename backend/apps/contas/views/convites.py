@@ -16,7 +16,7 @@ from apps.contas.services.convite_service import ConviteService
 from apps.contas.services.membro_portal_service import MembroPortalService
 from apps.prestadores.models import Prestador
 
-logger = logging.getLogger('marryme.contas')
+logger = logging.getLogger("marryme.contas")
 
 
 class ConviteListCreateView(APIView):
@@ -35,16 +35,16 @@ class ConviteListCreateView(APIView):
         try:
             convite, _ = ConviteService().emitir(
                 prestador=prestador,
-                email=serializer.validated_data['email'],
-                tipo=serializer.validated_data['tipo'],
-                permissoes=serializer.validated_data.get('permissoes_portal'),
+                email=serializer.validated_data["email"],
+                tipo=serializer.validated_data["tipo"],
+                permissoes=serializer.validated_data.get("permissoes_portal"),
                 criado_por=request.user,
             )
         except Exception as e:
-            detail = getattr(e, 'detail', str(e))
+            detail = getattr(e, "detail", str(e))
             if isinstance(detail, list):
                 detail = detail[0]
-            return Response({'erro': str(detail)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"erro": str(detail)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
             ConviteAcessoSerializer(convite).data,
@@ -57,17 +57,15 @@ class ConviteReenviarView(APIView):
 
     def post(self, request, prestador_id, convite_id):
         prestador = get_object_or_404(Prestador, id=prestador_id)
-        convite = get_object_or_404(
-            ConviteAcesso, id=convite_id, prestador=prestador
-        )
+        convite = get_object_or_404(ConviteAcesso, id=convite_id, prestador=prestador)
 
         try:
             novo_convite, _ = ConviteService().reenviar(convite, criado_por=request.user)
         except Exception as e:
-            detail = getattr(e, 'detail', str(e))
+            detail = getattr(e, "detail", str(e))
             if isinstance(detail, list):
                 detail = detail[0]
-            return Response({'erro': str(detail)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"erro": str(detail)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(ConviteAcessoSerializer(novo_convite).data)
 
@@ -77,17 +75,15 @@ class ConviteRevogarView(APIView):
 
     def delete(self, request, prestador_id, convite_id):
         prestador = get_object_or_404(Prestador, id=prestador_id)
-        convite = get_object_or_404(
-            ConviteAcesso, id=convite_id, prestador=prestador
-        )
+        convite = get_object_or_404(ConviteAcesso, id=convite_id, prestador=prestador)
 
         try:
             ConviteService().revogar(convite)
         except Exception as e:
-            detail = getattr(e, 'detail', str(e))
+            detail = getattr(e, "detail", str(e))
             if isinstance(detail, list):
                 detail = detail[0]
-            return Response({'erro': str(detail)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"erro": str(detail)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -110,6 +106,6 @@ class MembroRevogarView(APIView):
         try:
             MembroPortalService().revogar_membro(prestador, usuario_id)
         except ValueError as e:
-            return Response({'erro': str(e)}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"erro": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(status=status.HTTP_204_NO_CONTENT)

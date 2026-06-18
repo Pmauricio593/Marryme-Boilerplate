@@ -18,6 +18,12 @@ staticfiles/
 media/
 celerybeat-schedule
 
+# QA / testes
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+
 # Variáveis de ambiente
 .env
 

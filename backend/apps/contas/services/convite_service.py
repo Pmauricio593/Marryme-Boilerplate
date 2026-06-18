@@ -15,7 +15,7 @@ from apps.contas.models import ConviteAcesso, VinculoPrestador
 from apps.contas.services.autenticacao_portal_service import AutenticacaoPortalService
 from apps.prestadores.models import Prestador, Usuario
 
-logger = logging.getLogger('marryme.contas')
+logger = logging.getLogger("marryme.contas")
 
 
 @dataclass
@@ -34,15 +34,12 @@ class ConviteService:
         return hashlib.sha256(token.encode()).hexdigest()
 
     def _expiracao_horas(self) -> int:
-        return int(getattr(settings, 'CONVITE_EXPIRACAO_HORAS', 48))
+        return int(getattr(settings, "CONVITE_EXPIRACAO_HORAS", 48))
 
     def _mascarar_email(self, email: str) -> str:
-        local, _, domain = email.partition('@')
-        if len(local) <= 2:
-            masked = local[0] + '***'
-        else:
-            masked = local[0] + '***' + local[-1]
-        return f'{masked}@{domain}'
+        local, _, domain = email.partition("@")
+        masked = local[0] + "***" if len(local) <= 2 else local[0] + "***" + local[-1]
+        return f"{masked}@{domain}"
 
     def emitir(
         self,
@@ -55,21 +52,22 @@ class ConviteService:
     ) -> tuple[ConviteAcesso, str]:
         email = email.strip().lower()
 
-        if tipo == 'titular':
+        if tipo == "titular":
             if VinculoPrestador.objects.filter(
-                prestador=prestador, tipo='titular', ativo=True
+                prestador=prestador, tipo="titular", ativo=True
             ).exists():
-                raise ValidationError('Prestador já possui titular ativo.')
+                raise ValidationError("Prestador já possui titular ativo.")
 
             ConviteAcesso.objects.filter(
                 prestador=prestador,
-                tipo='titular',
-                status='pendente',
-            ).update(status='revogado')
+                tipo="titular",
+                status="pendente",
+            ).update(status="revogado")
 
         token_raw = secrets.token_urlsafe(32)
         permissoes_efetivas = (
-            PERMISSOES_TITULAR if tipo == 'titular'
+            PERMISSOES_TITULAR
+            if tipo == "titular"
             else (permissoes or PERMISSOES_ASSESSORIA_DEFAULT)
         )
 
@@ -91,7 +89,7 @@ class ConviteService:
                 tipo=tipo,
             )
 
-        logger.info(f'Convite emitido: {email} → {prestador} ({tipo})')
+        logger.info(f"Convite emitido: {email} → {prestador} ({tipo})")
         return convite, token_raw
 
     def emitir_convite_titular(
@@ -100,25 +98,25 @@ class ConviteService:
         criado_por: Usuario | None = None,
     ) -> str | None:
         if not prestador.email:
-            logger.warning(f'Prestador sem email: {prestador}')
+            logger.warning(f"Prestador sem email: {prestador}")
             return None
 
         if VinculoPrestador.objects.filter(
-            prestador=prestador, tipo='titular', ativo=True
+            prestador=prestador, tipo="titular", ativo=True
         ).exists():
-            logger.info(f'Titular já ativo: {prestador}')
+            logger.info(f"Titular já ativo: {prestador}")
             return None
 
         if ConviteAcesso.objects.filter(
-            prestador=prestador, tipo='titular', status='pendente'
+            prestador=prestador, tipo="titular", status="pendente"
         ).exists():
-            logger.info(f'Convite titular pendente: {prestador}')
+            logger.info(f"Convite titular pendente: {prestador}")
             return None
 
         _, token = self.emitir(
             prestador=prestador,
             email=prestador.email,
-            tipo='titular',
+            tipo="titular",
             criado_por=criado_por,
         )
         return token
@@ -126,9 +124,7 @@ class ConviteService:
     def _buscar_por_token(self, token: str) -> ConviteAcesso | None:
         token_hash = self._hash_token(token.strip())
         try:
-            return ConviteAcesso.objects.select_related('prestador').get(
-                token_hash=token_hash
-            )
+            return ConviteAcesso.objects.select_related("prestador").get(token_hash=token_hash)
         except ConviteAcesso.DoesNotExist:
             return None
 
@@ -138,33 +134,33 @@ class ConviteService:
         if not convite:
             return ConviteValidacaoDTO(
                 valido=False,
-                email_mascarado='',
-                tipo='',
-                prestador_nome='',
+                email_mascarado="",
+                tipo="",
+                prestador_nome="",
                 expira_em=None,
-                erro='Token inválido.',
+                erro="Token inválido.",
             )
 
-        if convite.status != 'pendente':
+        if convite.status != "pendente":
             return ConviteValidacaoDTO(
                 valido=False,
                 email_mascarado=self._mascarar_email(convite.email),
                 tipo=convite.tipo,
                 prestador_nome=convite.prestador.nome_artistico,
                 expira_em=convite.expira_em.isoformat(),
-                erro='Convite já utilizado ou revogado.',
+                erro="Convite já utilizado ou revogado.",
             )
 
         if convite.expirado:
-            convite.status = 'expirado'
-            convite.save(update_fields=['status'])
+            convite.status = "expirado"
+            convite.save(update_fields=["status"])
             return ConviteValidacaoDTO(
                 valido=False,
                 email_mascarado=self._mascarar_email(convite.email),
                 tipo=convite.tipo,
                 prestador_nome=convite.prestador.nome_artistico,
                 expira_em=convite.expira_em.isoformat(),
-                erro='Convite expirado.',
+                erro="Convite expirado.",
             )
 
         return ConviteValidacaoDTO(
@@ -178,26 +174,26 @@ class ConviteService:
     @transaction.atomic
     def aceitar(self, token: str, senha: str, nome: str | None = None) -> dict:
         if len(senha) < 8:
-            raise ValidationError('Senha deve ter no mínimo 8 caracteres.')
+            raise ValidationError("Senha deve ter no mínimo 8 caracteres.")
 
         validacao = self.validar(token)
         if not validacao.valido:
-            raise ValidationError(validacao.erro or 'Convite inválido.')
+            raise ValidationError(validacao.erro or "Convite inválido.")
 
         convite = self._buscar_por_token(token)
         if not convite:
-            raise ValidationError('Token inválido.')
+            raise ValidationError("Token inválido.")
 
-        role = 'prestador' if convite.tipo == 'titular' else 'assessoria'
+        role = "prestador" if convite.tipo == "titular" else "assessoria"
         usuario = Usuario.objects.filter(email=convite.email).first()
 
         if usuario:
-            if convite.tipo == 'titular':
-                raise ValidationError('Email já cadastrado.')
+            if convite.tipo == "titular":
+                raise ValidationError("Email já cadastrado.")
             if VinculoPrestador.objects.filter(
                 usuario=usuario, prestador=convite.prestador
             ).exists():
-                raise ValidationError('Usuário já vinculado a este prestador.')
+                raise ValidationError("Usuário já vinculado a este prestador.")
         else:
             usuario = Usuario(
                 username=convite.email,
@@ -205,7 +201,7 @@ class ConviteService:
                 role=role,
             )
             if nome:
-                partes = nome.strip().split(' ', 1)
+                partes = nome.strip().split(" ", 1)
                 usuario.first_name = partes[0]
                 if len(partes) > 1:
                     usuario.last_name = partes[1]
@@ -220,22 +216,24 @@ class ConviteService:
             permissoes_portal=convite.permissoes_efetivas(),
         )
 
-        convite.status = 'usado'
+        convite.status = "usado"
         convite.usado_em = timezone.now()
         convite.usuario_criado = usuario
-        convite.save(update_fields=['status', 'usado_em', 'usuario_criado'])
+        convite.save(update_fields=["status", "usado_em", "usuario_criado"])
 
         vinculo = VinculoPrestador.objects.get(usuario=usuario, prestador=convite.prestador)
-        logger.info(f'Convite aceito: {usuario.email} → {convite.prestador}')
+        logger.info(f"Convite aceito: {usuario.email} → {convite.prestador}")
 
         return AutenticacaoPortalService().gerar_resposta_login(usuario, vinculo)
 
-    def reenviar(self, convite: ConviteAcesso, criado_por: Usuario | None = None) -> tuple[ConviteAcesso, str]:
-        if convite.status != 'pendente':
-            raise ValidationError('Apenas convites pendentes podem ser reenviados.')
+    def reenviar(
+        self, convite: ConviteAcesso, criado_por: Usuario | None = None
+    ) -> tuple[ConviteAcesso, str]:
+        if convite.status != "pendente":
+            raise ValidationError("Apenas convites pendentes podem ser reenviados.")
 
-        convite.status = 'revogado'
-        convite.save(update_fields=['status'])
+        convite.status = "revogado"
+        convite.save(update_fields=["status"])
 
         return self.emitir(
             prestador=convite.prestador,
@@ -246,9 +244,9 @@ class ConviteService:
         )
 
     def revogar(self, convite: ConviteAcesso) -> None:
-        if convite.status != 'pendente':
-            raise ValidationError('Apenas convites pendentes podem ser revogados.')
+        if convite.status != "pendente":
+            raise ValidationError("Apenas convites pendentes podem ser revogados.")
 
-        convite.status = 'revogado'
-        convite.save(update_fields=['status'])
-        logger.info(f'Convite revogado: {convite.email} → {convite.prestador}')
+        convite.status = "revogado"
+        convite.save(update_fields=["status"])
+        logger.info(f"Convite revogado: {convite.email} → {convite.prestador}")

@@ -1,7 +1,8 @@
 import logging
+
 from celery import shared_task
 
-logger = logging.getLogger('marryme.roteiros')
+logger = logging.getLogger("marryme.roteiros")
 
 
 @shared_task(bind=True, max_retries=2, default_retry_delay=30)
@@ -19,8 +20,8 @@ def gerar_analise_estrategica(self, prestador_id: str):
 
         sessao = ChatSessao.objects.create(
             prestador=prestador,
-            titulo='Análise Estratégica — gerada automaticamente',
-            tipo='analise',
+            titulo="Análise Estratégica — gerada automaticamente",
+            tipo="analise",
         )
 
         prompt = (
@@ -33,15 +34,15 @@ def gerar_analise_estrategica(self, prestador_id: str):
         resposta = ChatService().processar_mensagem(sessao, prompt)
 
         # Salva análise no prestador para consulta rápida
-        prestador.analise_estrategica = {'conteudo': resposta}
-        prestador.save(update_fields=['analise_estrategica', 'atualizado_em'])
+        prestador.analise_estrategica = {"conteudo": resposta}
+        prestador.save(update_fields=["analise_estrategica", "atualizado_em"])
 
         logger.info(f"Análise gerada: {prestador}")
-        return {'status': 'ok', 'sessao_id': str(sessao.id)}
+        return {"status": "ok", "sessao_id": str(sessao.id)}
 
     except Exception as exc:
         logger.error(f"Erro análise {prestador_id}: {exc}")
-        raise self.retry(exc=exc)
+        raise self.retry(exc=exc) from exc
 
 
 @shared_task(bind=True, max_retries=2)
@@ -53,6 +54,7 @@ def pipeline_onboarding(self, prestador_id: str):
     """
     try:
         from apps.prestadores.models import Prestador
+
         prestador = Prestador.objects.get(id=prestador_id)
 
         logger.info(f"Pipeline onboarding iniciado: {prestador}")
@@ -64,8 +66,8 @@ def pipeline_onboarding(self, prestador_id: str):
         # gerar_roteiro_base.delay(prestador_id)
         # gerar_ctas_base.delay(prestador_id)
 
-        return {'status': 'ok', 'prestador': str(prestador)}
+        return {"status": "ok", "prestador": str(prestador)}
 
     except Exception as exc:
         logger.error(f"Erro pipeline {prestador_id}: {exc}")
-        raise self.retry(exc=exc)
+        raise self.retry(exc=exc) from exc

@@ -1,4 +1,4 @@
-.PHONY: build up down shell migrate migrations test logs
+.PHONY: build up down shell migrate migrations test pytest lint format cov logs createsuperuser
 
 build:
 	docker compose build
@@ -26,6 +26,20 @@ createsuperuser:
 
 test:
 	docker compose exec web python manage.py test
+
+pytest:
+	docker compose exec web pytest
+
+lint:
+	docker compose exec web ruff check .
+	docker compose exec web black --check .
+
+format:
+	docker compose exec web ruff check . --fix
+	docker compose exec web black .
+
+cov:
+	docker compose exec web pytest --cov=apps --cov=core --cov-report=term-missing
 
 logs:
 	docker compose logs -f web

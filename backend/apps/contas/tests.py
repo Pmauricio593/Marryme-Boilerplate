@@ -13,32 +13,30 @@ class ConviteServiceTest(TestCase):
 
     def setUp(self):
         self.prestador = Prestador.objects.create(
-            nome_artistico='Airton Sax',
-            nome_completo='Airton Silva',
-            categoria='musico',
-            cidade='São Paulo',
-            estado='SP',
-            whatsapp='11999999999',
-            email='airton@test.com',
+            nome_artistico="Airton Sax",
+            nome_completo="Airton Silva",
+            categoria="musico",
+            cidade="São Paulo",
+            estado="SP",
+            whatsapp="11999999999",
+            email="airton@test.com",
         )
         self.admin = Usuario.objects.create_user(
-            username='admin@test.com',
-            email='admin@test.com',
-            password='admin123dev',
-            role='admin',
+            username="admin@test.com",
+            email="admin@test.com",
+            password="admin123dev",
+            role="admin",
         )
 
     def test_emitir_convite_titular_sem_criar_usuario(self):
         _, token = ConviteService().emitir(
             prestador=self.prestador,
             email=self.prestador.email,
-            tipo='titular',
+            tipo="titular",
             criado_por=self.admin,
         )
 
-        self.assertFalse(
-            Usuario.objects.filter(email=self.prestador.email).exists()
-        )
+        self.assertFalse(Usuario.objects.filter(email=self.prestador.email).exists())
         self.assertEqual(ConviteAcesso.objects.count(), 1)
         self.assertTrue(token)
 
@@ -46,36 +44,40 @@ class ConviteServiceTest(TestCase):
         _, token = ConviteService().emitir(
             prestador=self.prestador,
             email=self.prestador.email,
-            tipo='titular',
+            tipo="titular",
             criado_por=self.admin,
         )
 
         resultado = ConviteService().aceitar(
             token=token,
-            senha='senha12345',
-            nome='Airton Sax',
+            senha="senha12345",
+            nome="Airton Sax",
         )
 
         self.assertTrue(
-            Usuario.objects.filter(email=self.prestador.email, role='prestador').exists()
+            Usuario.objects.filter(email=self.prestador.email, role="prestador").exists()
         )
         self.assertEqual(VinculoPrestador.objects.count(), 1)
-        self.assertIn('access', resultado)
-        self.assertEqual(resultado['nivel_acesso'], 'prestador')
+        self.assertIn("access", resultado)
+        self.assertEqual(resultado["nivel_acesso"], "prestador")
 
     def test_login_equipe_bloqueia_portal(self):
         _, token = ConviteService().emitir(
             prestador=self.prestador,
             email=self.prestador.email,
-            tipo='titular',
+            tipo="titular",
         )
-        ConviteService().aceitar(token=token, senha='senha12345')
+        ConviteService().aceitar(token=token, senha="senha12345")
 
         client = APIClient()
-        response = client.post('/api/v1/auth/login/', {
-            'username': self.prestador.email,
-            'password': 'senha12345',
-        }, format='json')
+        response = client.post(
+            "/api/v1/auth/login/",
+            {
+                "username": self.prestador.email,
+                "password": "senha12345",
+            },
+            format="json",
+        )
 
         self.assertEqual(response.status_code, 400)
 
@@ -83,12 +85,12 @@ class ConviteServiceTest(TestCase):
         _, token = ConviteService().emitir(
             prestador=self.prestador,
             email=self.prestador.email,
-            tipo='titular',
+            tipo="titular",
         )
 
         client = APIClient()
-        response = client.get(f'/api/v1/portal/convites/validar/?token={token}')
+        response = client.get(f"/api/v1/portal/convites/validar/?token={token}")
 
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.data['valido'])
-        self.assertIn('***', response.data['email_mascarado'])
+        self.assertTrue(response.data["valido"])
+        self.assertIn("***", response.data["email_mascarado"])
