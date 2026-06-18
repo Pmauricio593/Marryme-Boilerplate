@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from .models import Prestador
@@ -70,6 +71,7 @@ class PortalPrestadorSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+    @extend_schema_field(serializers.JSONField(allow_null=True))
     def get_health_score_atual(self, obj):
         from apps.campanhas.models import HealthScore
 
@@ -88,8 +90,8 @@ class PortalPrestadorSerializer(serializers.ModelSerializer):
             },
         }
 
-    def get_total_sessoes(self, obj):
+    def get_total_sessoes(self, obj) -> int:
         return obj.sessoes_chat.filter(status__in=["ativa", "finalizada"]).count()
 
-    def get_roteiros_aprovados(self, obj):
+    def get_roteiros_aprovados(self, obj) -> int:
         return obj.roteiros.filter(aprovado=True).count()

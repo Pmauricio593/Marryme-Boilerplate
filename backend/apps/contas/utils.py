@@ -27,6 +27,10 @@ def resolver_prestador_portal(request, permissao: str | None = None):
     if not vinculo:
         raise NotFound("Nenhum prestador vinculado.")
 
+    prestador_id_param = request.query_params.get("prestador_id")
+    if prestador_id_param and str(vinculo.prestador_id) != str(prestador_id_param):
+        raise PermissionDenied("Acesso negado ao prestador solicitado.")
+
     if permissao and not usuario_tem_permissao_portal(user, vinculo, permissao):
         raise PermissionDenied(f"Sem permissão para: {permissao}.")
 

@@ -25,7 +25,7 @@ createsuperuser:
 	docker compose exec web python manage.py createsuperuser
 
 test:
-	docker compose exec web python manage.py test
+	docker compose exec web pytest
 
 pytest:
 	docker compose exec web pytest

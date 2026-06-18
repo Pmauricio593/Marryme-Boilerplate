@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     "django_celery_results",
     "rest_framework",
     "rest_framework_simplejwt",
+    "drf_spectacular",
     "corsheaders",
     "core",
     "apps.contas",
@@ -99,6 +100,45 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "core.pagination.MarryMePagination",
     "PAGE_SIZE": 20,
     "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "MarryMe API",
+    "DESCRIPTION": "API interna CS e portal de prestadores.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SCHEMA_PATH_PREFIX": r"/api/v1",
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
+    "SERVE_AUTHENTICATION": [],
+    "SECURITY": [{"BearerAuth": []}],
+    "APPEND_COMPONENTS": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+            }
+        }
+    },
+    "TAGS": [
+        {"name": "Auth", "description": "Login equipe e refresh JWT"},
+        {"name": "Prestadores", "description": "CRUD e operações CS"},
+        {"name": "Campanhas", "description": "Métricas Meta, health score e relatórios IA"},
+        {"name": "Roteiros", "description": "Chat de roteiros e aprovação"},
+        {"name": "Contas", "description": "Convites e membros do portal"},
+        {"name": "Portal", "description": "Endpoints filtrados por vínculo prestador"},
+    ],
+    "ENUM_NAME_OVERRIDES": {
+        "ConviteStatus": "apps.contas.models.ConviteAcesso.STATUS",
+        "ConviteTipo": "apps.contas.models.ConviteAcesso.TIPOS",
+        "VinculoTipo": "apps.contas.models.VinculoPrestador.TIPOS",
+        "SessaoChatStatus": "apps.roteiros.models.ChatSessao.STATUS",
+        "SessaoChatTipo": "apps.roteiros.models.ChatSessao.TIPOS",
+        "RoteiroFinalTipo": "apps.roteiros.models.RoteiroFinal.TIPOS",
+        "HealthScoreStatus": "apps.campanhas.models.HealthScore.STATUS",
+    },
 }
 
 SIMPLE_JWT = {

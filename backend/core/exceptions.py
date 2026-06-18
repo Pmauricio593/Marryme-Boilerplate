@@ -22,11 +22,19 @@ def custom_exception_handler(exc, context):
             f"status={response.status_code}"
         )
 
-        # Padroniza o formato da resposta de erro
-        response.data = {
-            "erro": _traduzir_erro(response.status_code, response.data),
+        original_data = response.data
+        payload = {
+            "erro": _traduzir_erro(response.status_code, original_data),
             "status": response.status_code,
         }
+        if isinstance(original_data, dict) and response.status_code == 400:
+            detalhes = {
+                k: v for k, v in original_data.items() if k not in ("detail", "non_field_errors")
+            }
+            if detalhes:
+                payload["detalhes"] = detalhes
+
+        response.data = payload
         return response
 
     # Erro inesperado — loga e retorna 500 genérico

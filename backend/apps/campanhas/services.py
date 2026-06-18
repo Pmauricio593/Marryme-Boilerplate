@@ -6,7 +6,7 @@ from django.conf import settings
 from apps.prestadores.models import Prestador
 from integrations.meta_ads import MetaAdsClient
 
-from .models import ConfiguracaoMeta, HealthScore, MetricaMeta
+from .models import ConfiguracaoMeta, HealthScore, MetricaMeta, RelatorioIA
 
 logger = logging.getLogger("marryme.campanhas")
 
@@ -123,13 +123,7 @@ class HealthScoreService:
             )
 
         score_final = max(0, score_final)
-
-        if score_final >= 70:
-            status = "saudavel"
-        elif score_final >= 40:
-            status = "atencao"
-        else:
-            status = "em_risco"
+        status = self.classificar_status(score_final)
 
         logger.info(
             f"HS calculado → {score_final} ({status}) | "
@@ -143,6 +137,14 @@ class HealthScoreService:
             "tem_thruplay": tem_thruplay,
             "breakdown": {k: v for k, v in scores.items() if v is not None},
         }
+
+    @staticmethod
+    def classificar_status(score: int) -> str:
+        if score >= 70:
+            return "saudavel"
+        if score >= 40:
+            return "atencao"
+        return "em_risco"
 
     def salvar(self, prestador: Prestador, resultado: dict, kpis: dict) -> HealthScore:
         hs = HealthScore.objects.create(
@@ -289,6 +291,11 @@ class MetaSyncService:
         self._salvar_metricas(prestador, campanhas_raw)
         self.hs.salvar(prestador, resultado_hs, kpis)
 
+        from django.utils import timezone
+
+        prestador.meta_ultima_sync = timezone.now()
+        prestador.save(update_fields=["meta_ultima_sync", "atualizado_em"])
+
         logger.info(
             f"Sync OK: {prestador} | HS {resultado_hs['score']} "
             f"| {kpis.get('results', 0)} msgs | R${kpis.get('spend', 0):.2f}"
@@ -396,3 +403,124 @@ class MetaSyncService:
         if not arr or not isinstance(arr, list):
             return 0
         return float(arr[0].get("value", 0))
+
+
+class RelatorioIAService:
+    """Gera análise IA e pauta de reunião a partir das métricas do período."""
+
+    SYSTEM_PROMPT = """
+Você é analista CS da MarryMe, agência de marketing para prestadores de casamento.
+Analise os dados de campanha Meta Ads e produza insights acionáveis em português.
+Nunca invente números — use apenas os dados fornecidos.
+Responda SOMENTE com JSON válido no formato:
+{
+  "analise": "texto com diagnóstico e recomendações",
+  "pauta_reuniao": ["item 1", "item 2", "item 3"],
+  "acoes_cs": ["ação 1", "ação 2"]
+}
+""".strip()
+
+    def __init__(self):
+        from integrations.claude_ai import ClaudeClient
+
+        self.claude = ClaudeClient()
+
+    def gerar_analise(self, relatorio: RelatorioIA) -> RelatorioIA:
+        prestador = relatorio.prestador
+        metricas = MetricaMeta.objects.filter(
+            prestador=prestador,
+            data_referencia__gte=relatorio.periodo_inicio,
+            data_referencia__lte=relatorio.periodo_fim,
+        ).order_by("-data_referencia")
+
+        hs = (
+            HealthScore.objects.filter(
+                prestador=prestador,
+                data_calculo__gte=relatorio.periodo_inicio,
+                data_calculo__lte=relatorio.periodo_fim,
+            )
+            .order_by("-data_calculo")
+            .first()
+        )
+
+        resumo = self._montar_resumo_metricas(metricas, hs)
+        prompt = self._montar_prompt_usuario(prestador, relatorio, resumo)
+
+        resposta = self.claude.chat(
+            system=self.SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=4096,
+        )
+
+        dados_ia = self._parse_resposta_ia(resposta)
+        relatorio.dados_json = {
+            **dados_ia,
+            "metricas_resumo": resumo,
+            "periodo": {
+                "inicio": relatorio.periodo_inicio.isoformat(),
+                "fim": relatorio.periodo_fim.isoformat(),
+            },
+        }
+        relatorio.health_score = hs.score if hs else prestador.health_score
+        relatorio.tokens_usados = len(resposta.split())
+        relatorio.save(update_fields=["dados_json", "health_score", "tokens_usados"])
+
+        logger.info(f"Relatório IA gerado: {relatorio.id} — {prestador}")
+        return relatorio
+
+    def _montar_resumo_metricas(self, metricas, hs) -> dict:
+        totais = {
+            "impressoes": 0,
+            "cliques": 0,
+            "leads": 0,
+            "gasto": 0.0,
+            "campanhas": metricas.count(),
+        }
+        for m in metricas:
+            totais["impressoes"] += m.impressoes
+            totais["cliques"] += m.cliques
+            totais["leads"] += m.leads
+            totais["gasto"] += float(m.gasto)
+
+        if totais["leads"]:
+            totais["cpl_medio"] = round(totais["gasto"] / totais["leads"], 2)
+        else:
+            totais["cpl_medio"] = 0
+
+        if hs:
+            totais["health_score"] = hs.score
+            totais["health_status"] = hs.status
+
+        return totais
+
+    def _montar_prompt_usuario(self, prestador, relatorio, resumo) -> str:
+        return f"""
+Prestador: {prestador.nome_artistico}
+Categoria: {prestador.get_categoria_display()}
+Período: {relatorio.periodo_inicio} a {relatorio.periodo_fim}
+
+Resumo de métricas:
+{resumo}
+
+Gere análise estratégica e pauta de reunião CS para este cliente.
+""".strip()
+
+    def _parse_resposta_ia(self, resposta: str) -> dict:
+        import json
+        import re
+
+        try:
+            return json.loads(resposta)
+        except json.JSONDecodeError:
+            match = re.search(r"\{.*\}", resposta, re.DOTALL)
+            if match:
+                try:
+                    return json.loads(match.group())
+                except json.JSONDecodeError:
+                    pass
+
+        return {
+            "analise": resposta.strip(),
+            "pauta_reuniao": [],
+            "acoes_cs": [],
+        }

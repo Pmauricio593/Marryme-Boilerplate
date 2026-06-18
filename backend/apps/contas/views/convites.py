@@ -1,6 +1,8 @@
 import logging
 
+from django.conf import settings
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,6 +21,19 @@ from apps.prestadores.models import Prestador
 logger = logging.getLogger("marryme.contas")
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=["Contas"],
+        responses=ConviteAcessoSerializer(many=True),
+        summary="Lista convites do prestador",
+    ),
+    post=extend_schema(
+        tags=["Contas"],
+        request=EmitirConviteSerializer,
+        responses={201: ConviteAcessoSerializer},
+        summary="Emite convite de acesso ao portal",
+    ),
+)
 class ConviteListCreateView(APIView):
     permission_classes = [IsCS]
 
@@ -33,7 +48,7 @@ class ConviteListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
 
         try:
-            convite, _ = ConviteService().emitir(
+            convite, token_raw = ConviteService().emitir(
                 prestador=prestador,
                 email=serializer.validated_data["email"],
                 tipo=serializer.validated_data["tipo"],
@@ -47,11 +62,20 @@ class ConviteListCreateView(APIView):
             return Response({"erro": str(detail)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(
-            ConviteAcessoSerializer(convite).data,
+            {
+                **ConviteAcessoSerializer(convite).data,
+                "link_portal": f"{settings.FRONTEND_URL}/portal/convite?token={token_raw}",
+            },
             status=status.HTTP_201_CREATED,
         )
 
 
+@extend_schema(
+    tags=["Contas"],
+    request=None,
+    responses=ConviteAcessoSerializer,
+    summary="Reenvia convite pendente",
+)
 class ConviteReenviarView(APIView):
     permission_classes = [IsCS]
 
@@ -60,16 +84,27 @@ class ConviteReenviarView(APIView):
         convite = get_object_or_404(ConviteAcesso, id=convite_id, prestador=prestador)
 
         try:
-            novo_convite, _ = ConviteService().reenviar(convite, criado_por=request.user)
+            novo_convite, token_raw = ConviteService().reenviar(convite, criado_por=request.user)
         except Exception as e:
             detail = getattr(e, "detail", str(e))
             if isinstance(detail, list):
                 detail = detail[0]
             return Response({"erro": str(detail)}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(ConviteAcessoSerializer(novo_convite).data)
+        return Response(
+            {
+                **ConviteAcessoSerializer(novo_convite).data,
+                "link_portal": f"{settings.FRONTEND_URL}/portal/convite?token={token_raw}",
+            }
+        )
 
 
+@extend_schema(
+    tags=["Contas"],
+    request=None,
+    responses={204: None},
+    summary="Revoga convite pendente",
+)
 class ConviteRevogarView(APIView):
     permission_classes = [IsCS]
 
@@ -88,6 +123,11 @@ class ConviteRevogarView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema(
+    tags=["Contas"],
+    responses=VinculoPrestadorSerializer(many=True),
+    summary="Lista membros com acesso ao portal",
+)
 class MembroListView(APIView):
     permission_classes = [IsCS]
 
@@ -97,6 +137,12 @@ class MembroListView(APIView):
         return Response(VinculoPrestadorSerializer(membros, many=True).data)
 
 
+@extend_schema(
+    tags=["Contas"],
+    request=None,
+    responses={204: None},
+    summary="Revoga acesso de membro ao portal",
+)
 class MembroRevogarView(APIView):
     permission_classes = [IsCS]
 

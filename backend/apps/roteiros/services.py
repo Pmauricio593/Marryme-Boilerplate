@@ -106,15 +106,22 @@ Health Score atual: {prestador.health_score or 'não calculado'}
 
     def processar_mensagem(self, sessao: ChatSessao, mensagem: str, arquivos: list = None) -> str:
         """Processa mensagem e retorna resposta completa."""
+        arquivos = arquivos or []
         ChatMensagem.objects.create(
             sessao=sessao,
             role="user",
             content=mensagem,
-            arquivos=arquivos or [],
+            arquivos=arquivos,
         )
 
         historico = self._montar_historico(sessao)
         system = self.montar_system_prompt(sessao.prestador, sessao.tipo)
+        mensagem_enriquecida = self._enriquecer_mensagem_com_arquivos(mensagem, arquivos, system)
+
+        if historico and historico[-1]["role"] == "user":
+            historico[-1]["content"] = mensagem_enriquecida
+        else:
+            historico.append({"role": "user", "content": mensagem_enriquecida})
 
         resposta = self.claude.chat(
             system=system,
@@ -138,15 +145,22 @@ Health Score atual: {prestador.health_score or 'não calculado'}
 
     def processar_stream(self, sessao: ChatSessao, mensagem: str, arquivos: list = None):
         """Streaming via Server-Sent Events — chunks em tempo real."""
+        arquivos = arquivos or []
         ChatMensagem.objects.create(
             sessao=sessao,
             role="user",
             content=mensagem,
-            arquivos=arquivos or [],
+            arquivos=arquivos,
         )
 
         historico = self._montar_historico(sessao)
         system = self.montar_system_prompt(sessao.prestador, sessao.tipo)
+        mensagem_enriquecida = self._enriquecer_mensagem_com_arquivos(mensagem, arquivos, system)
+
+        if historico and historico[-1]["role"] == "user":
+            historico[-1]["content"] = mensagem_enriquecida
+        else:
+            historico.append({"role": "user", "content": mensagem_enriquecida})
 
         resposta_completa = []
         for chunk in self.claude.chat_stream(system=system, messages=historico):
@@ -162,6 +176,42 @@ Health Score atual: {prestador.health_score or 'não calculado'}
         sessao.save(update_fields=["atualizado_em"])
         logger.info(f"Stream concluído: {sessao.prestador} / sessão {sessao.id}")
 
+    TIPO_ROTEIRO_MAP = {
+        "geral": "video",
+        "video": "video",
+        "cta": "cta",
+        "direcao": "direcao",
+        "analise": "analise",
+    }
+
+    def finalizar_sessao(self, sessao: ChatSessao, roteiro_final) -> RoteiroFinal:
+        """Finaliza sessão e cria RoteiroFinal em rascunho para aprovação."""
+        sessao.status = "finalizada"
+        sessao.roteiro_final = roteiro_final
+        sessao.save(update_fields=["status", "roteiro_final", "atualizado_em"])
+
+        if isinstance(roteiro_final, dict):
+            conteudo = roteiro_final
+        elif roteiro_final:
+            conteudo = {"texto": roteiro_final}
+        else:
+            ultima = sessao.mensagens.filter(role="assistant").order_by("-criado_em").first()
+            conteudo = {"texto": ultima.content if ultima else ""}
+
+        tipo = self.TIPO_ROTEIRO_MAP.get(sessao.tipo, "video")
+        roteiro, _ = RoteiroFinal.objects.update_or_create(
+            sessao=sessao,
+            defaults={
+                "prestador": sessao.prestador,
+                "tipo": tipo,
+                "conteudo_json": conteudo,
+                "aprovado": False,
+            },
+        )
+
+        logger.info(f"Sessão finalizada: {sessao.id} — roteiro {roteiro.id}")
+        return roteiro
+
     # ── Helpers ──────────────────────────────────────────────────
 
     def _montar_historico(self, sessao: ChatSessao) -> list:
@@ -173,3 +223,35 @@ Health Score atual: {prestador.health_score or 'não calculado'}
         if not dados:
             return "Não informado."
         return "\n".join(f"- {k}: {v}" for k, v in dados.items())
+
+    def _enriquecer_mensagem_com_arquivos(self, mensagem: str, arquivos: list, system: str) -> str:
+        """
+        Processa anexos PDF em base64.
+        Contrato: [{"nome": "...", "tipo": "application/pdf", "dados_base64": "..."}]
+        """
+        if not arquivos:
+            return mensagem
+
+        partes = [mensagem]
+        for arq in arquivos:
+            if not isinstance(arq, dict):
+                continue
+            mime = (arq.get("tipo") or arq.get("media_type") or "").lower()
+            if "pdf" not in mime:
+                continue
+            b64 = arq.get("dados_base64") or arq.get("data")
+            if not b64:
+                continue
+            nome = arq.get("nome", "documento.pdf")
+            try:
+                analise = self.claude.analisar_pdf(
+                    system=system,
+                    mensagem=f"Resuma os pontos relevantes deste PDF ({nome}) para roteiros de casamento.",
+                    pdf_base64=b64,
+                )
+                partes.append(f"\n[Análise do PDF {nome}]:\n{analise}")
+            except Exception as e:
+                logger.warning(f"Falha ao analisar PDF {nome}: {e}")
+                partes.append(f"\n[PDF {nome} anexado — análise indisponível no momento.]")
+
+        return "\n".join(partes)

@@ -1,11 +1,18 @@
 import logging
 
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.contas.permissions import IsAdmin, IsCS, IsEquipeOuPortalVinculado
 from apps.contas.utils import resolver_prestador_portal
+from core.openapi import (
+    AtualizarFaseRequest,
+    PortalCampanhasResponse,
+    PortalRoteirosResponse,
+    StatusEnfileiradoResponse,
+)
 
 from .models import Prestador
 from .serializers import (
@@ -18,6 +25,14 @@ from .services import PrestadorService
 logger = logging.getLogger("marryme.prestadores")
 
 
+@extend_schema_view(
+    list=extend_schema(tags=["Prestadores"]),
+    create=extend_schema(tags=["Prestadores"]),
+    retrieve=extend_schema(tags=["Prestadores"]),
+    update=extend_schema(tags=["Prestadores"]),
+    partial_update=extend_schema(tags=["Prestadores"]),
+    destroy=extend_schema(tags=["Prestadores"]),
+)
 class PrestadorViewSet(viewsets.ModelViewSet):
     queryset = Prestador.objects.select_related("responsavel").all()
 
@@ -51,6 +66,12 @@ class PrestadorViewSet(viewsets.ModelViewSet):
         serializer.save(responsavel=self.request.user)
         logger.info(f"Prestador criado: {serializer.instance}")
 
+    @extend_schema(
+        tags=["Prestadores"],
+        request=AtualizarFaseRequest,
+        responses=PrestadorSerializer,
+        summary="Atualiza fase do pipeline",
+    )
     @action(detail=True, methods=["post"], url_path="atualizar-fase")
     def atualizar_fase(self, request, pk=None):
         prestador = self.get_object()
@@ -69,6 +90,11 @@ class PrestadorViewSet(viewsets.ModelViewSet):
         prestador = PrestadorService().atualizar_fase(prestador, nova_fase)
         return Response(PrestadorSerializer(prestador).data)
 
+    @extend_schema(
+        tags=["Prestadores"],
+        responses=StatusEnfileiradoResponse,
+        summary="Enfileira sync Meta Ads do prestador",
+    )
     @action(detail=True, methods=["post"], url_path="sync-meta")
     def sync_meta(self, request, pk=None):
         prestador = self.get_object()
@@ -85,6 +111,11 @@ class PrestadorViewSet(viewsets.ModelViewSet):
         logger.info(f"Sync Meta enfileirado: {prestador}")
         return Response({"status": "enfileirado"})
 
+    @extend_schema(
+        tags=["Prestadores"],
+        responses=StatusEnfileiradoResponse,
+        summary="Enfileira sync Meta Ads de todos os clientes",
+    )
     @action(detail=False, methods=["post"], url_path="sync-todos")
     def sync_todos(self, request, pk=None):
         from apps.campanhas.tasks import sincronizar_todos_clientes
@@ -93,6 +124,13 @@ class PrestadorViewSet(viewsets.ModelViewSet):
         return Response({"status": "enfileirado"})
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Portal"],
+        responses=PortalPrestadorSerializer,
+        summary="Perfil do prestador vinculado ao usuário",
+    )
+)
 class PortalPerfilView(viewsets.ViewSet):
     permission_classes = [IsEquipeOuPortalVinculado]
 
@@ -101,6 +139,13 @@ class PortalPerfilView(viewsets.ViewSet):
         return Response(PortalPrestadorSerializer(prestador).data)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Portal"],
+        responses=PortalCampanhasResponse,
+        summary="Health score e métricas recentes do prestador vinculado",
+    )
+)
 class PortalCampanhasView(viewsets.ViewSet):
     permission_classes = [IsEquipeOuPortalVinculado]
 
@@ -122,6 +167,13 @@ class PortalCampanhasView(viewsets.ViewSet):
         )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Portal"],
+        responses=PortalRoteirosResponse,
+        summary="Roteiros aprovados e sessões recentes do prestador vinculado",
+    )
+)
 class PortalRoteirosView(viewsets.ViewSet):
     permission_classes = [IsEquipeOuPortalVinculado]
     permissao_portal = "roteiros"

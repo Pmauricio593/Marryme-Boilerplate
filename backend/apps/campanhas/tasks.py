@@ -97,3 +97,21 @@ def calcular_health_score(self, prestador_id: str):
     except Exception as exc:
         logger.error(f"Erro HS {prestador_id}: {exc}")
         raise self.retry(exc=exc) from exc
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=30)
+def gerar_analise_relatorio(self, relatorio_id: str):
+    """Gera análise IA e pauta de reunião para um RelatorioIA."""
+    try:
+        from .models import RelatorioIA
+        from .services import RelatorioIAService
+
+        relatorio = RelatorioIA.objects.select_related("prestador").get(id=relatorio_id)
+        RelatorioIAService().gerar_analise(relatorio)
+
+        logger.info(f"Análise IA concluída: relatório {relatorio_id}")
+        return {"status": "ok", "relatorio_id": relatorio_id}
+
+    except Exception as exc:
+        logger.error(f"Erro análise relatório {relatorio_id}: {exc}")
+        raise self.retry(exc=exc) from exc

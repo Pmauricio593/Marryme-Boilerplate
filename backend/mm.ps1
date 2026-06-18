@@ -22,7 +22,7 @@ switch ($Target) {
     "migrate" { Invoke-Compose exec -T web python manage.py migrate }
     "migrations" { Invoke-Compose exec -T web python manage.py makemigrations }
     "createsuperuser" { Invoke-Compose exec -T web python manage.py createsuperuser }
-    "test" { Invoke-Compose exec -T web python manage.py test }
+    "test" { Invoke-Compose exec -T web pytest }
     "pytest" { Invoke-Compose exec -T web pytest }
     "lint" {
         Invoke-Compose exec -T web ruff check .

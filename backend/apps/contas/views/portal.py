@@ -1,6 +1,7 @@
 import logging
 
-from rest_framework import status
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -10,7 +11,45 @@ from apps.contas.services.convite_service import ConviteService
 
 logger = logging.getLogger("marryme.contas")
 
+ValidarConviteResponse = inline_serializer(
+    name="ValidarConviteResponse",
+    fields={
+        "valido": serializers.BooleanField(),
+        "email_mascarado": serializers.CharField(allow_null=True),
+        "tipo": serializers.CharField(allow_null=True),
+        "prestador_nome": serializers.CharField(allow_null=True),
+        "expira_em": serializers.DateTimeField(allow_null=True),
+        "erro": serializers.CharField(allow_null=True),
+    },
+)
 
+PortalLoginResponse = inline_serializer(
+    name="PortalLoginResponse",
+    fields={
+        "access": serializers.CharField(),
+        "refresh": serializers.CharField(),
+        "role": serializers.CharField(),
+        "nivel_acesso": serializers.CharField(),
+        "nome": serializers.CharField(),
+        "prestador_id": serializers.UUIDField(required=False),
+        "permissoes": serializers.JSONField(required=False),
+    },
+)
+
+
+@extend_schema(
+    tags=["Portal"],
+    parameters=[
+        OpenApiParameter(
+            name="token",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            required=True,
+        )
+    ],
+    responses=ValidarConviteResponse,
+    summary="Valida token de convite antes do cadastro",
+)
 class ValidarConviteView(APIView):
     permission_classes = []
 
@@ -35,6 +74,12 @@ class ValidarConviteView(APIView):
         )
 
 
+@extend_schema(
+    tags=["Portal"],
+    request=AceitarConviteSerializer,
+    responses={201: PortalLoginResponse},
+    summary="Aceita convite e cria usuário do portal",
+)
 class AceitarConviteView(APIView):
     permission_classes = []
 
@@ -57,6 +102,12 @@ class AceitarConviteView(APIView):
         return Response(resultado, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    tags=["Portal"],
+    request=PortalLoginSerializer,
+    responses=PortalLoginResponse,
+    summary="Login do portal (prestador ou assessoria)",
+)
 class PortalLoginView(APIView):
     permission_classes = []
 

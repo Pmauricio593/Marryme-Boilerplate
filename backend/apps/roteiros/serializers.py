@@ -19,7 +19,7 @@ class ChatSessaoSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ["id", "criado_em", "atualizado_em", "tokens_usados"]
 
-    def get_total_mensagens(self, obj):
+    def get_total_mensagens(self, obj) -> int:
         return obj.mensagens.count()
 
 
@@ -32,7 +32,7 @@ class ChatSessaoListSerializer(serializers.ModelSerializer):
         model = ChatSessao
         fields = ["id", "titulo", "tipo", "status", "total_mensagens", "atualizado_em"]
 
-    def get_total_mensagens(self, obj):
+    def get_total_mensagens(self, obj) -> int:
         return obj.mensagens.count()
 
 
