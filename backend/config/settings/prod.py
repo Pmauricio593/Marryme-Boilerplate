@@ -10,13 +10,27 @@ ALLOWED_HOSTS = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "https://marryme.com.br",
+    origin.strip()
+    for origin in config("CORS_ALLOWED_ORIGINS", default="https://marryme.com.br").split(",")
+    if origin.strip()
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://web-production-62d5c.up.railway.app",
-    "https://marryme.com.br",
-]
+_frontend_url = config("FRONTEND_URL", default="").rstrip("/")
+if _frontend_url and _frontend_url not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append(_frontend_url)
+
+_csrf_from_hosts = [f"https://{host}" for host in ALLOWED_HOSTS if host]
+CSRF_TRUSTED_ORIGINS = list(
+    dict.fromkeys(
+        CORS_ALLOWED_ORIGINS
+        + _csrf_from_hosts
+        + [
+            origin.strip()
+            for origin in config("CSRF_TRUSTED_ORIGINS", default="").split(",")
+            if origin.strip()
+        ]
+    )
+)
 
 SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=True, cast=bool)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

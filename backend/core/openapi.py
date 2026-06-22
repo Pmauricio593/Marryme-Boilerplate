@@ -55,3 +55,17 @@ PortalRoteirosResponse = inline_serializer(
         "sessoes_recentes": serializers.ListField(child=serializers.JSONField()),
     },
 )
+
+
+def paginated_response_schema(name: str, item_serializer=None):
+    fields = {
+        "total": serializers.IntegerField(),
+        "paginas": serializers.IntegerField(),
+        "pagina_atual": serializers.IntegerField(),
+        "proxima": serializers.URLField(allow_null=True, required=False),
+        "anterior": serializers.URLField(allow_null=True, required=False),
+        "resultados": serializers.ListField(child=serializers.JSONField()),
+    }
+    if item_serializer is not None:
+        fields["resultados"] = serializers.ListField(child=item_serializer())
+    return inline_serializer(name=name, fields=fields)

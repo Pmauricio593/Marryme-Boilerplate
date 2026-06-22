@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #1a0a2e;
+  --color-secondary: #c084fc;
+  --color-accent: #e879f9;
+  --color-gold: #d4af37;
+  --color-bg-light: #f8f5ff;
+}
+
+body {
+  @apply bg-bg-light text-text-dark;
+}
+
+.card {
+  @apply rounded-card border border-border bg-white p-6 shadow-sm;
+}
+
+.btn-primary {
+  @apply rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-mid disabled:opacity-50;
+}
+
+.btn-secondary {
+  @apply rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-text-dark transition hover:bg-bg-light;
+}
+
+.input {
+  @apply w-full rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none focus:border-secondary;
+}
+
+.badge {
+  @apply inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium;
+}
+
+.badge-hs-saudavel {
+  @apply badge bg-emerald-100 text-emerald-800;
+}
+
+.badge-hs-atencao {
+  @apply badge bg-amber-100 text-amber-800;
+}
+
+.badge-hs-risco {
+  @apply badge bg-red-100 text-red-800;
+}

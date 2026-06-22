@@ -284,7 +284,7 @@ Prestador não deve ver:
 ### Segurança
 
 - API keys nunca no frontend
-- Portal sempre filtrado por `prestador_vinculado`
+- Portal sempre filtrado por `VinculoPrestador` (`apps.contas`)
 - Validar role antes de expor ação sensível
 - Evitar retornos com stack trace ou detalhes internos
 

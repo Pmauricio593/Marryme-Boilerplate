@@ -175,19 +175,27 @@ O layout atual não será refeito agora. A documentação de site estático perm
 
 ## Apps Django Existentes
 
+### `apps.contas`
+
+Responsabilidade: autenticação, convites, vínculos e permissões.
+
+Funções primárias:
+
+- Login equipe e portal
+- Convite-primeiro (usuário criado só após aceitar link)
+- `VinculoPrestador` (titular + assessoria)
+- Permissões por nível: ADMIN, EQUIPE, PRESTADOR, ASSESSORIA
+
 ### `apps.prestadores`
 
-Responsabilidade: base de clientes/prestadores, usuários, portal e pipeline.
+Responsabilidade: base de clientes/prestadores e pipeline.
 
 Funções primárias:
 
 - Cadastro e edição de prestadores
 - Pipeline de fases
-- Usuário interno e usuário prestador
-- Primeiro acesso do portal
-- Login do portal
-- Perfil do prestador
-- Dados do prestador para portal
+- Perfil do prestador no portal
+- Dados do prestador para campanhas e roteiros
 
 Prioridade para CS:
 
@@ -292,11 +300,23 @@ POST /api/v1/roteiros-finais/{id}/aprovar/
 ### Portal
 
 ```text
+GET  /api/v1/portal/convites/validar/?token=
+POST /api/v1/portal/convites/aceitar/
 POST /api/v1/portal/auth/login/
-POST /api/v1/portal/auth/primeiro-acesso/
+POST /api/v1/portal/auth/refresh/
 GET  /api/v1/portal/perfil/
 GET  /api/v1/portal/campanhas/
 GET  /api/v1/portal/roteiros/
+```
+
+### CS — convites e membros
+
+```text
+GET/POST /api/v1/prestadores/{id}/convites/
+POST     /api/v1/prestadores/{id}/convites/{cid}/reenviar/
+DELETE   /api/v1/prestadores/{id}/convites/{cid}/
+GET      /api/v1/prestadores/{id}/membros/
+DELETE   /api/v1/prestadores/{id}/membros/{uid}/
 ```
 
 ---
@@ -306,12 +326,13 @@ GET  /api/v1/portal/roteiros/
 Intenção de produto:
 
 ```text
-admin     -> acesso total
-dev       -> acesso técnico total
-cs        -> gestão operacional de clientes
-sdr       -> criação/leitura focada em vendas
-prestador -> apenas próprios dados no portal
+admin      -> acesso total
+cs/sdr/dev -> equipe interna (nível EQUIPE)
+prestador  -> titular do portal (acesso completo ao próprio cliente)
+assessoria -> subordinado do prestador (visualização configurável)
 ```
+
+Vínculos de portal via `VinculoPrestador` em `apps.contas`.
 
 Ao implementar frontend e permissões, validar a hierarquia real no código antes de assumir qualquer comportamento.
 
@@ -425,6 +446,7 @@ Prioridade de telas:
 - Docs devem diferenciar estado atual de visão futura
 - Não criar arquivos `.md` novos sem necessidade
 - Atualizar este arquivo quando mudar arquitetura, endpoint ou prioridade
+- Plano de engenharia e sessões: [`docs/engenharia/`](docs/engenharia/) — checklist de progresso em [`CHECKLIST_PRODUCAO.md`](CHECKLIST_PRODUCAO.md) na raiz
 
 ---
 

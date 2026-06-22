@@ -1,0 +1,35 @@
+# MarryMe — regras Cursor
+
+Fontes de verdade (leia antes de implementar):
+- CURSOR_CONTEXT_MARRYME.md — produto e operação
+- SKILL_MARRYME.md — design e engenharia
+- docs/engenharia/ — plano de execução e padrões
+- CHECKLIST_PRODUCAO.md — progresso (marque com o usuário)
+
+## Projeto
+Monorepo MarryMe. Backend Django em `backend/`. Frontend Next.js ainda não criado.
+Prioridade: CS (prestadores, campanhas, roteiros, contas). Prospecção/Apify fora de foco.
+
+## Arquitetura obrigatória
+View → Service → Integration → Model → Task
+App de referência: `backend/apps/contas/` (services/, views/, constants.py, permissions.py)
+
+## Auth — 4 níveis
+ADMIN · EQUIPE (cs/sdr/dev) · PRESTADOR · ASSESSORIA
+Portal filtrado por VinculoPrestador. Nunca confiar em prestador_id do cliente.
+
+## Regras inegociáveis
+1. Secrets só em env vars. Nunca no frontend ou logs.
+2. Sem stack trace em produção.
+3. Logs stdout, logger `marryme.<dominio>`.
+4. PR pequeno, 1 sessão por vez. Conventional Commits.
+5. Teste acompanha mudança. `make lint && make test` antes de entregar.
+6. Não criar .md desnecessários. Não refatorar amplo sem ganho claro.
+7. Responder em português. Não commitar/push sem pedido explícito.
+
+## Comandos
+cd backend && make up | lint | format | test | cov | migrate
+
+## Sessão de trabalho
+Use docs/engenharia/02-OPERACAO-IA.md e skill marryme-sessao-engenharia.
+Diagnostique antes de codar. Mostre diff. Valide CHECKLIST_PRODUCAO.md com o usuário.

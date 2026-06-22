@@ -30,11 +30,10 @@ class MetricaMetaViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         prestador_id = self.request.query_params.get("prestador")
+        qs = MetricaMeta.objects.select_related("prestador")
         if prestador_id:
-            return MetricaMeta.objects.filter(prestador_id=prestador_id).order_by(
-                "-data_referencia"
-            )
-        return MetricaMeta.objects.all()
+            return qs.filter(prestador_id=prestador_id).order_by("-data_referencia")
+        return qs.all()
 
 
 @extend_schema_view(
@@ -49,9 +48,10 @@ class HealthScoreViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         prestador_id = self.request.query_params.get("prestador")
+        qs = HealthScore.objects.select_related("prestador")
         if prestador_id:
-            return HealthScore.objects.filter(prestador_id=prestador_id).order_by("-data_calculo")
-        return HealthScore.objects.all()
+            return qs.filter(prestador_id=prestador_id).order_by("-data_calculo")
+        return qs.all()
 
     @extend_schema(
         tags=["Campanhas"],
@@ -99,9 +99,10 @@ class RelatorioIAViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         prestador_id = self.request.query_params.get("prestador")
+        qs = RelatorioIA.objects.select_related("prestador")
         if prestador_id:
-            return RelatorioIA.objects.filter(prestador_id=prestador_id).order_by("-gerado_em")
-        return RelatorioIA.objects.all()
+            return qs.filter(prestador_id=prestador_id).order_by("-gerado_em")
+        return qs.all()
 
     @extend_schema(
         tags=["Campanhas"],

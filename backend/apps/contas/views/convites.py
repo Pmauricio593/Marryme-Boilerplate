@@ -17,14 +17,23 @@ from apps.contas.serializers import (
 from apps.contas.services.convite_service import ConviteService
 from apps.contas.services.membro_portal_service import MembroPortalService
 from apps.prestadores.models import Prestador
+from core.openapi import paginated_response_schema
+from core.pagination import MarryMePagination
 
 logger = logging.getLogger("marryme.contas")
+
+PaginatedConviteResponse = paginated_response_schema(
+    "PaginatedConviteResponse", ConviteAcessoSerializer
+)
+PaginatedMembroResponse = paginated_response_schema(
+    "PaginatedMembroResponse", VinculoPrestadorSerializer
+)
 
 
 @extend_schema_view(
     get=extend_schema(
         tags=["Contas"],
-        responses=ConviteAcessoSerializer(many=True),
+        responses=PaginatedConviteResponse,
         summary="Lista convites do prestador",
     ),
     post=extend_schema(
@@ -39,8 +48,15 @@ class ConviteListCreateView(APIView):
 
     def get(self, request, prestador_id):
         prestador = get_object_or_404(Prestador, id=prestador_id)
-        convites = ConviteAcesso.objects.filter(prestador=prestador)
-        return Response(ConviteAcessoSerializer(convites, many=True).data)
+        convites = (
+            ConviteAcesso.objects.filter(prestador=prestador)
+            .select_related("prestador", "criado_por")
+            .order_by("-criado_em")
+        )
+        paginator = MarryMePagination()
+        page = paginator.paginate_queryset(convites, request)
+        serializer = ConviteAcessoSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request, prestador_id):
         prestador = get_object_or_404(Prestador, id=prestador_id)
@@ -125,7 +141,7 @@ class ConviteRevogarView(APIView):
 
 @extend_schema(
     tags=["Contas"],
-    responses=VinculoPrestadorSerializer(many=True),
+    responses=PaginatedMembroResponse,
     summary="Lista membros com acesso ao portal",
 )
 class MembroListView(APIView):
@@ -134,7 +150,10 @@ class MembroListView(APIView):
     def get(self, request, prestador_id):
         prestador = get_object_or_404(Prestador, id=prestador_id)
         membros = MembroPortalService().listar_membros(prestador)
-        return Response(VinculoPrestadorSerializer(membros, many=True).data)
+        paginator = MarryMePagination()
+        page = paginator.paginate_queryset(membros, request)
+        serializer = VinculoPrestadorSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 @extend_schema(

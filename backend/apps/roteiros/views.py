@@ -49,9 +49,10 @@ class ChatSessaoViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         prestador_id = self.request.query_params.get("prestador")
+        qs = ChatSessao.objects.select_related("prestador")
         if prestador_id:
-            return ChatSessao.objects.filter(prestador_id=prestador_id).order_by("-atualizado_em")
-        return ChatSessao.objects.all()
+            return qs.filter(prestador_id=prestador_id).order_by("-atualizado_em")
+        return qs.all()
 
     @extend_schema(
         tags=["Roteiros"],
@@ -173,9 +174,10 @@ class RoteiroFinalViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         prestador_id = self.request.query_params.get("prestador")
+        qs = RoteiroFinal.objects.select_related("prestador")
         if prestador_id:
-            return RoteiroFinal.objects.filter(prestador_id=prestador_id).order_by("-criado_em")
-        return RoteiroFinal.objects.all()
+            return qs.filter(prestador_id=prestador_id).order_by("-criado_em")
+        return qs.all()
 
     @extend_schema(
         tags=["Roteiros"],

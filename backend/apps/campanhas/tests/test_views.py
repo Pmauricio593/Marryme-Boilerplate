@@ -1,8 +1,50 @@
 from unittest.mock import patch
 
 import pytest
+from django.test import override_settings
 
 from apps.campanhas.models import RelatorioIA
+
+
+@pytest.mark.django_db
+@override_settings(CELERY_TASK_ALWAYS_EAGER=True)
+@patch("integrations.claude_ai.ClaudeClient.chat")
+def test_gerar_analise_via_api_popula_dados_json(mock_chat, api_cs, prestador_factory):
+    from datetime import date
+
+    from apps.campanhas.models import MetricaMeta
+
+    mock_chat.return_value = (
+        '{"analise": "Campanha estável.", '
+        '"pauta_reuniao": ["Revisar criativo"], "acoes_cs": ["Agendar call"]}'
+    )
+
+    prestador = prestador_factory()
+    MetricaMeta.objects.create(
+        prestador=prestador,
+        data_referencia=date(2026, 1, 15),
+        campanha_id="1",
+        campanha_nome="Teste",
+        impressoes=1000,
+        leads=10,
+        gasto=500,
+    )
+    relatorio = RelatorioIA.objects.create(
+        prestador=prestador,
+        periodo_inicio=date(2026, 1, 1),
+        periodo_fim=date(2026, 1, 31),
+        dados_json={},
+    )
+
+    post_response = api_cs.post(f"/api/v1/relatorios/{relatorio.id}/gerar-analise/")
+    assert post_response.status_code == 200
+    assert post_response.data["status"] == "enfileirado"
+
+    get_response = api_cs.get(f"/api/v1/relatorios/{relatorio.id}/")
+    assert get_response.status_code == 200
+    assert get_response.data["dados_json"]["analise"] == "Campanha estável."
+    assert get_response.data["dados_json"]["pauta_reuniao"] == ["Revisar criativo"]
+    assert get_response.data["dados_json"]["acoes_cs"] == ["Agendar call"]
 
 
 @pytest.mark.django_db

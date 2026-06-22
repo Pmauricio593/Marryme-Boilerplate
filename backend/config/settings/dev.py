@@ -24,3 +24,8 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 LOGGING = configure_logging(debug=DEBUG)
+
+REST_FRAMEWORK = {
+    **REST_FRAMEWORK,
+    "DEFAULT_THROTTLE_CLASSES": [],
+}

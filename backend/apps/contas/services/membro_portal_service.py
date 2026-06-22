@@ -7,13 +7,13 @@ logger = logging.getLogger("marryme.contas")
 
 class MembroPortalService:
 
-    def listar_membros(self, prestador) -> list[VinculoPrestador]:
-        return list(
+    def listar_membros(self, prestador):
+        return (
             VinculoPrestador.objects.filter(
                 prestador=prestador,
                 ativo=True,
             )
-            .select_related("usuario")
+            .select_related("usuario", "prestador")
             .order_by("tipo", "-criado_em")
         )
 
