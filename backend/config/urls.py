@@ -1,3 +1,5 @@
+import os
+
 from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
@@ -8,7 +10,33 @@ from apps.contas.views.equipe import MarryMeTokenView
 
 
 def health(request):
-    return JsonResponse({"status": "ok"})
+    from django.urls import NoReverseMatch, reverse
+
+    payload: dict[str, str | bool] = {"status": "ok"}
+
+    commit = os.environ.get("RAILWAY_GIT_COMMIT_SHA", "")
+    if commit:
+        payload["commit"] = commit[:7]
+
+    branch = os.environ.get("RAILWAY_GIT_BRANCH", "")
+    if branch:
+        payload["branch"] = branch
+
+    try:
+        import drf_spectacular  # noqa: F401
+
+        payload["spectacular"] = True
+    except ImportError:
+        payload["spectacular"] = False
+
+    try:
+        reverse("schema")
+        reverse("swagger-ui")
+        payload["openapi"] = True
+    except NoReverseMatch:
+        payload["openapi"] = False
+
+    return JsonResponse(payload)
 
 
 urlpatterns = [

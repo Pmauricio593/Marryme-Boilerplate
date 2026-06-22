@@ -93,8 +93,13 @@ Base URL local: `http://localhost:8000` · Docs: `/api/v1/docs/`
 ### Serviços
 
 1. **Postgres** e **Redis** — plugins Railway, referenciar em `DATABASE_URL` e `REDIS_URL`.
-2. **Web** — root directory `backend/`, [`railway.toml`](railway.toml), healthcheck `GET /health/`.
-3. **Celery worker** — mesmo repo, [`railway.worker.toml`](railway.worker.toml) ou Dockerfile `docker/Dockerfile.celery` + start command abaixo.
+2. **Web** — no painel Railway (serviço web):
+   - **Root Directory:** `backend`
+   - **Config-as-code file:** `/backend/railway.toml` (caminho absoluto no repo — o toml **não** segue o root directory)
+   - Healthcheck: `GET /health/` (resposta esperada inclui `"openapi": true` após deploy correto)
+3. **Celery worker** — **Config-as-code file:** `/backend/railway.worker.toml`, mesmo root `backend/`
+
+> **Redeploy ≠ rebuild.** Se `/health/` não mostrar `"openapi": true`, o Railway pode estar servindo imagem Docker antiga. Faça **Deploy** do commit latest com **Clear build cache** (ou push novo commit). Confirme em Settings → Source que **Root Directory = `backend`**.
 
 ```bash
 celery -A config worker --loglevel=info --concurrency=2

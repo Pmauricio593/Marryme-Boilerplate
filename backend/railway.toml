@@ -1,3 +1,14 @@
+# Monorepo: no painel Railway, além de Root Directory = backend, defina:
+# Settings → Config-as-code → Railway config file = /backend/railway.toml
+# (o toml NÃO segue o root directory automaticamente)
+
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "docker/Dockerfile"
+watchPatterns = ["/backend/**"]
+
+[deploy]
+healthcheckPath = "/health/"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
