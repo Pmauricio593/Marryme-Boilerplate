@@ -1,7 +1,7 @@
 FROM python:3.12-alpine
 
 # Bump para invalidar cache de build no Railway quando o código mudar
-ARG CACHE_BUST=2026-06-22-port-fix
+ARG CACHE_BUST=2026-06-22-healthcheck
 
 # Evita arquivos .pyc e garante logs em tempo real
 ENV PYTHONDONTWRITEBYTECODE=1
