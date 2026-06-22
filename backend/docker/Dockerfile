@@ -1,7 +1,7 @@
 FROM python:3.12-alpine
 
 # Bump para invalidar cache de build no Railway quando o código mudar
-ARG CACHE_BUST=2026-06-22-openapi
+ARG CACHE_BUST=2026-06-22-port-fix
 
 # Evita arquivos .pyc e garante logs em tempo real
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -26,5 +26,5 @@ RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000
 
+# Sem CMD: entrypoint.sh sobe gunicorn em 0.0.0.0:${PORT} (Railway injeta PORT dinâmico)
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "120"]
